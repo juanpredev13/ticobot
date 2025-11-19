@@ -166,3 +166,103 @@ When adding a new provider (LLM, database, etc.):
 ## Documentation
 
 Phase-specific documentation is located in `/docs` folder, organized by development phases in markdown files.
+- Task Update & Sync Process
+
+  When completing or adding tasks, follow these steps in order:
+
+  ## 1. Git Repo Documentation
+  - Create/update task files in `docs/development/phase-one/`
+  - Create detailed docs in `docs/development/requirements/` (if needed)
+  - Keep comprehensive technical documentation
+
+  ## 2. GitHub Issues
+  - Create issue: `gh issue create --title "[Phase X.Y] Task Name" --body "..." --assignee @me`
+  - Close completed: `gh issue close <number> --comment "Task completed..."`
+  - Add labels after creation: `gh issue edit <number> --add-label "phase-one,documentation"`
+
+  ## 3. Git Commits & PR
+  - Create feature branch: `git checkout -b phase-one/descriptive-name`
+  - Make **separate commits** for each completed issue:
+    ```bash
+    git add <files-for-issue-1>
+    git commit -m "[Phase X.Y] Task Title\n\nCloses #N\n\n🤖 Generated with Claude Code\nCo-Authored-By: Claude <noreply@anthropic.com>"
+  - Push branch: git push -u origin branch-name
+  - Create PR: gh pr create --title "Title" --body "..." --base main
+
+  4. Obsidian Vault Sync
+
+  Update 3 files in /home/juanpredev/Documents/obsidian/Personal/4 - Side Projects/TicoBot/:
+
+  A. Task File (Management/Phase 1/XX - Task Name.md)
+
+  Add GitHub section:
+  ## GitHub
+
+  - **Issue**: [#X](https://github.com/juanpredev13/ticobot/issues/X) ✅ Closed
+  - **PR**: [#Y](https://github.com/juanpredev13/ticobot/pull/Y) ✅ Merged
+  - **Commit**: `abc1234` - [Phase X.Y] Task Title
+
+  For open tasks:
+  ## GitHub
+
+  - **Issue**: [#X](https://github.com/juanpredev13/ticobot/issues/X) 🟡 Open
+
+  B. Task List (Management/List Tasks.md)
+
+  Move completed tasks to Archive:
+  ## Archive
+
+  - [x] [[Phase 1/01 - Task|01 - Task Name]] #ticobot ✅ 2025-11-19
+
+  Add new tasks to Backlog:
+  ## Backlog
+
+  - [ ] [[Phase 1/09 - New Task|09 - New Task]] #ticobot #backlog
+
+  C. Main Index (TicoBot.md)
+
+  1. Update task list (add ✅ to completed, add new tasks)
+  2. Update "Current Status" section
+  3. Update "Phase 1 Progress" checkboxes
+  4. Update "Last Updated" date
+  5. Update "Next Milestone"
+
+  5. Key Principles
+
+  - Git repo = detailed technical docs (source of truth)
+  - GitHub = issue tracking and PR management
+  - Obsidian = quick reference & progress tracking (simplified)
+  - Keep format consistent: Obsidian uses #tags and [[wiki links]]
+  - Always sync all three: git repo, GitHub issues, Obsidian vault
+
+  6. Commit Message Format
+
+  [Phase X.Y] Brief Title
+
+  Detailed description of what was completed.
+
+  ## Deliverables Completed
+  - Item 1
+  - Item 2
+
+  ## Documentation Created
+  - file1.md
+  - file2.md
+
+  Closes #N
+
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+  Co-Authored-By: Claude <noreply@anthropic.com>
+
+  7. PR Description Template
+
+  Include:
+  - Summary of what was completed
+  - Which issues are closed (Closes #1, Closes #2)
+  - Key decisions made
+  - Documentation structure
+  - Testing checklist
+  - Next steps
+- create pr before close issues and update obsidian documentation
+- use rebase for mergin
