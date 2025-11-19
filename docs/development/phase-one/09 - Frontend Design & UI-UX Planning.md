@@ -1,15 +1,19 @@
-# TASK: Frontend Design & UI/UX Planning
+# TASK: Frontend Design & UI/UX Planning (Figma Mockups)
 
 #ticobot #backlog
 
 ## Description
 
-Design the complete frontend user experience and create Figma mockups for all critical screens:
+Design the complete user experience and create **Figma mockups** for all critical screens. This is a pure design task focused on UI/UX, visual design, and user flows.
+
+**Note**: Frontend implementation is tracked separately (see Next Steps).
+
+Deliverables:
 - User-facing interfaces (search, compare, chat)
 - Admin dashboard
-- Mobile-responsive layouts
-- Spanish language UI
-- Accessibility considerations
+- Mobile-responsive layouts (3 breakpoints)
+- Spanish language UI text
+- Accessibility annotations (WCAG 2.1 Level AA)
 
 ## Why?
 
@@ -168,10 +172,15 @@ A well-designed frontend ensures:
 ## Next Steps
 
 After completion, proceed to:
-- Frontend implementation (Next.js)
-- Component development
+- **Frontend Implementation**: Tracked separately in GitHub issue (Phase 2.1)
+- Component development following modular architecture
 - Integration with backend API
-- Usability testing
+- Usability testing with target users
+
+## Related Issues
+
+- **Design (this task)**: GitHub Issue #9
+- **Frontend Implementation**: GitHub Issue #12 (Phase 2.1)
 
 ## Implementation Notes
 
