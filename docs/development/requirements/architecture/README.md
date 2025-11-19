@@ -118,6 +118,39 @@ Complete TypeScript interface definitions for:
 
 ---
 
+### 05. Frontend Architecture
+**File**: `05-frontend-architecture.md`
+
+**Contents**:
+Feature-based modular frontend structure (Level 3) for Next.js:
+
+**Module Structure**:
+1. **Core Module** - Shared components, design system, hooks, utilities
+2. **Documents Module** - PDF document management and exploration
+3. **Search Module** - Semantic search with filtering
+4. **Comparison Module** - Side-by-side party comparison (2-4 parties)
+5. **Chat Module** - RAG-powered Q&A interface
+6. **Admin Module** - System monitoring and management
+
+**Key Sections**:
+- Complete file/folder structure
+- Module breakdown with responsibilities
+- Design system (colors, typography, spacing)
+- State management strategy (local, module, global, server)
+- Routing structure (Next.js App Router)
+- Accessibility guidelines (WCAG 2.1 Level AA)
+- Performance considerations
+
+**Advantages**:
+- Feature isolation and scalability
+- Team collaboration friendly
+- Business logic alignment
+- Easy maintenance and testing
+
+**Use this when**: Planning or implementing frontend modules and components
+
+---
+
 ## Architecture Principles
 
 ### 1. Clean Architecture
