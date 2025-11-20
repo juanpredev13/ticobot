@@ -1,0 +1,25 @@
+{
+  "name": "ticobot",
+  "version": "0.1.0",
+  "description": "Intelligent platform for analyzing Costa Rica's 2026 Government Plans",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter backend --filter frontend dev",
+    "build": "pnpm --recursive build",
+    "test": "pnpm --recursive test",
+    "lint": "pnpm --recursive lint",
+    "clean": "pnpm --recursive clean"
+  },
+  "keywords": [
+    "rag",
+    "llm",
+    "costa-rica",
+    "government-plans"
+  ],
+  "author": "Juan Pablo Pretel",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
