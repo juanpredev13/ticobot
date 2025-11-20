@@ -3,8 +3,8 @@
  * Run with: pnpm tsx src/test-providers.ts
  */
 
-import { ProviderFactory } from './factory/ProviderFactory.js';
-import { env } from './config/env.js';
+import { ProviderFactory } from '../../src/factory/ProviderFactory.js';
+import { env } from '../../src/config/env.js';
 
 async function testConfiguration() {
   console.log('\n🔧 Testing Configuration...\n');
