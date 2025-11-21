@@ -1,5 +1,19 @@
 # TicoBot
 
+<div align="lef">
+
+<!-- Choose your preferred sponsor badge color by uncommenting one option below -->
+
+
+<!-- Gold/Yellow Options -->
+[![Sponsor](https://img.shields.io/badge/💖_Sponsor_this_project-FFD700?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/juanpredev13) 
+
+**⭐ If you find this project useful, please consider sponsoring its development! ⭐**
+
+</div>
+
+---
+
 An intelligent platform for extracting, processing, indexing, and analyzing Costa Rica's 2026 Government Plans officially published by the Supreme Electoral Tribunal (TSE).
 
 ## Overview
