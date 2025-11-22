@@ -1,6 +1,12 @@
 # TASK: Technology Decisions & Stack Finalization
 
-#ticobot #backlog
+#ticobot #completed ✅
+
+## Status
+
+**Completed**: 2025-11-22
+**Phase**: 1.7
+**Type**: Technology Stack Finalization
 
 ## Description
 
@@ -22,27 +28,27 @@ Clear technology decisions ensure:
 
 ## Deliverables
 
-- [ ] Backend technology decisions:
-  - [ ] Runtime: Node.js + TypeScript
-  - [ ] Framework: Express or Fastify
-  - [ ] SDK: Supabase SDK
-  - [ ] Embedding provider selection
-- [ ] Database decisions:
-  - [ ] Primary choice: Supabase (PostgreSQL + pgvector)
-  - [ ] Alternative options documented
-  - [ ] Schema design completed
-- [ ] Frontend decisions:
-  - [ ] Framework: Next.js (App Router)
-  - [ ] Styling: Tailwind CSS or shadcn/ui
-  - [ ] API integration pattern
-- [ ] Provider selections with justification:
-  - [ ] Development providers (free/cheap)
-  - [ ] Production providers (quality/cost balance)
-  - [ ] Cost analysis for each option
-- [ ] Deployment strategy:
-  - [ ] Hosting platform
-  - [ ] CI/CD approach
-  - [ ] Environment configuration
+- [x] Backend technology decisions:
+  - [x] Runtime: Node.js 20+ TypeScript
+  - [x] Framework: Express.js
+  - [x] SDK: Supabase SDK
+  - [x] Embedding provider: OpenAI text-embedding-3-small
+- [x] Database decisions:
+  - [x] Primary choice: Supabase (PostgreSQL + pgvector)
+  - [x] Schema design completed
+  - [x] HNSW indexing configured
+- [x] Frontend decisions:
+  - [x] Framework: Next.js 16 (App Router)
+  - [x] Styling: Tailwind CSS (vanilla, no component library)
+  - [x] API integration: REST via proxy routes
+- [x] Provider selections with justification:
+  - [x] Dev LLM: OpenAI GPT-4o-mini (~$1 total)
+  - [x] Prod LLM: DeepSeek + OpenAI GPT-4o (switchable)
+  - [x] Complete cost analysis ($20-140 per 10K users)
+- [x] Deployment strategy:
+  - [x] Frontend: Vercel (auto-deploy from GitHub)
+  - [x] Backend: Railway (auto-deploy from GitHub)
+  - [x] Environment configuration documented
 
 ## Related Documentation
 
@@ -51,50 +57,70 @@ Clear technology decisions ensure:
 - `Notes/LLM Providers Comparison - Cost & Performance.md`
 - `Notes/Cost Analysis - F1Bot at Scale.md`
 
-## Technology Stack
+## Final Technology Stack ✅
 
 ### Backend
-- Node.js + TypeScript
-- Express (lightweight, flexible)
-- Supabase SDK
-- OpenAI for embeddings (or alternatives)
-
-### Database
-- Supabase (PostgreSQL + pgvector)
-- RPC functions for similarity search
-- HNSW or IVFFlat indexing
+- **Runtime**: Node.js 20+ with TypeScript
+- **Framework**: Express.js
+- **Database**: Supabase (PostgreSQL + pgvector)
+- **Deployment**: Railway
+- **Testing**: Vitest + Supertest
 
 ### Frontend
-- Next.js (App Router)
-- Tailwind CSS or shadcn/ui
-- `/api/rag` endpoint for backend communication
+- **Framework**: Next.js 16 (App Router)
+- **Styling**: Tailwind CSS (vanilla)
+- **Deployment**: Vercel
+- **Testing**: Vitest + Testing Library
 
-### Provider Recommendations
+### AI/ML Providers
 
-**Development:**
-- LLM: Groq Llama 3.1 70B (free tier)
-- Embeddings: OpenAI text-embedding-3-small
-- Vector DB: Supabase (free tier)
-- Cost: ~$0-5
+**Embeddings** (All environments):
+- Provider: OpenAI
+- Model: text-embedding-3-small
+- Dimensions: 1536
+- Cost: $0.02 per 1M tokens
 
-**Production (Quality):**
-- LLM: Claude 3.5 Sonnet
-- Embeddings: OpenAI text-embedding-3-small
-- Vector DB: Supabase or Pinecone
-- Cost: ~$172 per 10K users
+**LLM Development**:
+- Provider: OpenAI
+- Model: GPT-4o-mini
+- Cost: $0.15/1M input, $0.60/1M output
+- Total Dev Cost: ~$1
 
-**Production (Budget):**
-- LLM: Gemini 1.5 Flash
-- Embeddings: OpenAI text-embedding-3-small
-- Vector DB: Supabase
-- Cost: ~$4-10 per 10K users
+**LLM Production**:
+- Primary: DeepSeek (deepseek-chat)
+- Backup/A/B: OpenAI GPT-4o
+- **Switchable via env var** (provider abstraction!)
+- Cost: $20 (DeepSeek) or $140 (OpenAI) per 10K users
 
-## Testing
+### Vector Store
+- Supabase pgvector
+- HNSW indexing
+- Similarity function: cosine distance
+- Free tier: 500MB (enough for MVP)
 
-- [ ] Technology stack validated for all requirements
-- [ ] Cost projections confirmed
-- [ ] Performance benchmarks reviewed
-- [ ] Scalability analysis completed
+## Key Documentation Created
+
+- [x] **Technology Decisions Document** (`requirements/07-technology-decisions.md`)
+  - Complete stack justification
+  - Provider comparison and selection
+  - Cost analysis and projections
+  - Deployment architecture
+  - Migration paths
+
+- [x] **Environment Setup Guide** (`requirements/ENVIRONMENT_SETUP_GUIDE.md`)
+  - API key acquisition steps
+  - Environment file templates
+  - Supabase setup instructions
+  - Vercel and Railway configuration
+  - Database schema migrations
+  - Security best practices
+
+## Validation
+
+- [x] Technology stack validated for all requirements
+- [x] Cost projections confirmed ($20-140 per 10K users)
+- [x] Performance benchmarks reviewed (< 2s latency achievable)
+- [x] Scalability analysis completed (supports 100K+ users)
 
 ## Dependencies
 
