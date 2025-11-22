@@ -19,6 +19,8 @@ out/
 .env.test.local
 .env.production.local
 
+.claude/
+
 # Logs
 logs/
 *.log
