@@ -116,8 +116,9 @@ export class TextCleaner {
             .replace(/[ \t]+/g, ' ')
             // Replace multiple newlines with double newline (preserve paragraphs)
             .replace(/\n{3,}/g, '\n\n')
-            // Remove spaces around newlines
-            .replace(/\s*\n\s*/g, '\n');
+            // Remove spaces around single newlines, but preserve double newlines
+            .replace(/ *\n *\n */g, '\n\n')  // Preserve paragraph breaks
+            .replace(/ *\n */g, '\n');        // Clean single newlines
     }
 
     /**
