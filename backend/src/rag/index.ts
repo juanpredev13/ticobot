@@ -15,9 +15,9 @@ export type {
     RAGResponse
 } from './types/rag.types';
   
-  // TODO: Export components when implemented
-  // export { QueryEmbedder } from './components/QueryEmbedder';
-  // export { SemanticSearcher } from './components/SemanticSearcher';
-  // export { ContextBuilder } from './components/ContextBuilder';
-  // export { ResponseGenerator } from './components/ResponseGenerator';
-  // export { RAGPipeline } from './components/RAGPipeline';
+  // Export RAG components
+  export { QueryEmbedder } from './components/QueryEmbedder.js';
+  export { SemanticSearcher } from './components/SemanticSearcher.js';
+  export { ContextBuilder } from './components/ContextBuilder.js';
+  export { ResponseGenerator } from './components/ResponseGenerator.js';
+  export { RAGPipeline } from './components/RAGPipeline.js';
