@@ -27,11 +27,64 @@ export class SupabaseVectorStore implements IVectorStore {
     this.tableName = 'chunks';
   }
 
+  /**
+   * Insert or update document metadata
+   * @returns The UUID of the inserted/updated document
+   */
+  async upsertDocument(document: {
+    documentId: string;
+    title: string;
+    partyId: string;
+    partyName: string;
+    url?: string;
+    filePath?: string;
+    pageCount?: number;
+    fileSizeBytes?: number;
+    metadata?: Record<string, any>;
+  }): Promise<string> {
+    try {
+      const { data, error } = await this.client
+        .from('documents')
+        .upsert(
+          {
+            document_id: document.documentId,
+            title: document.title,
+            party_id: document.partyId,
+            party_name: document.partyName,
+            url: document.url,
+            file_path: document.filePath,
+            page_count: document.pageCount,
+            file_size_bytes: document.fileSizeBytes,
+            metadata: document.metadata || {},
+            parsed_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'document_id',
+          }
+        )
+        .select('id')
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('No document ID returned from upsert');
+      }
+
+      return data.id;
+    } catch (error) {
+      throw new Error(
+        `Supabase document upsert failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`
+      );
+    }
+  }
+
   async upsert(documents: VectorDocument[]): Promise<void> {
     try {
-      const { error } = await this.client.from(this.tableName).upsert(
-        documents.map((doc) => ({
-          id: doc.id,
+      const rows = documents.map((doc) => {
+        const row: any = {
           document_id: doc.metadata?.documentId || null,
           chunk_index: doc.metadata?.chunkIndex || 0,
           content: doc.content,
@@ -40,18 +93,29 @@ export class SupabaseVectorStore implements IVectorStore {
           token_count: doc.metadata?.tokens || null,
           char_count: doc.content?.length || 0,
           metadata: doc.metadata,
-        })),
-        {
-          onConflict: 'id',
+        };
+
+        // Only include id if it's provided (for updates)
+        if (doc.id) {
+          row.id = doc.id;
         }
-      );
+
+        return row;
+      });
+
+      // Only set onConflict if we have IDs
+      const hasIds = documents.some((doc) => doc.id);
+
+      const { error } = await this.client
+        .from(this.tableName)
+        .upsert(rows, hasIds ? { onConflict: 'id' } : undefined);
 
       if (error) {
         throw error;
       }
     } catch (error) {
       throw new Error(
-        `Supabase upsert failed: ${error instanceof Error ? error.message : String(error)}`
+        `Supabase upsert failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`
       );
     }
   }
@@ -63,10 +127,13 @@ export class SupabaseVectorStore implements IVectorStore {
   ): Promise<SearchResult[]> {
     try {
       // Call the Supabase RPC function for vector similarity search
+      // Support both party_id (snake_case) and partyId (camelCase)
+      const partyId = filters?.party_id || filters?.partyId || null;
+
       const { data, error } = await this.client.rpc('match_chunks', {
         query_embedding: queryEmbedding,
         match_count: k,
-        filter_party_id: filters?.party_id || null,
+        filter_party_id: partyId,
       });
 
       if (error) {
