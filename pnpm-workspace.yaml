@@ -1,4 +1,7 @@
 packages:
-  - 'backend'
-  - 'frontend'
-  - 'shared'
+  - backend
+  - frontend
+  - shared
+
+onlyBuiltDependencies:
+  - supabase
