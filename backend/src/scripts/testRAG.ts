@@ -23,7 +23,7 @@ async function main() {
 
         const result = await pipeline.query(question, {
             topK: 3,
-            filters: { partyId: 'PLN' }
+            // filters: { partyId: 'PLN' } // Temporarily remove filter to test
         });
 
         const duration = Date.now() - startTime;

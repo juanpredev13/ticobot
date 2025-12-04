@@ -20,8 +20,8 @@ async function main() {
         testDocument.url,
         testDocument.documentId,
         {
-            generateEmbeddings: false, // Set to true when embeddings are ready
-            storeInVectorDB: false     // Set to true when vector DB is ready
+            generateEmbeddings: true,  // ✅ Embeddings ready (OpenAI)
+            storeInVectorDB: true      // ✅ Supabase ready
         }
     );
 
