@@ -24,3 +24,7 @@ export type {
   Chunk,
   QueryOptions,
 } from './interfaces/IDatabaseProvider.js';
+
+// Export utilities
+export { Logger } from './utils/Logger.js';
+export type { LogLevel } from './utils/Logger.js';
