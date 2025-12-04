@@ -25,7 +25,7 @@ const envSchema = z.object({
 
   // Anthropic configuration
   ANTHROPIC_API_KEY: z.string().optional(),
-  ANTHROPIC_MODEL: z.string().default('claude-3-sonnet-20240229'),
+  ANTHROPIC_MODEL: z.string().default('claude-3-5-sonnet-20241022'),
 
   // Google configuration
   GOOGLE_API_KEY: z.string().optional(),

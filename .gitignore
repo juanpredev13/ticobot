@@ -51,3 +51,6 @@ next-env.d.ts
 # Temporary files
 tmp/
 temp/
+
+# Downloads (PDF files from TSE)
+backend/downloads/
