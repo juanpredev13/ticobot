@@ -267,3 +267,4 @@ Phase-specific documentation is located in `/docs` folder, organized by developm
 - create pr before close issues and update obsidian documentation
 - use rebase for mergin
 - we need to create a branch first to start new step
+- for running scripts, test y prefere run mannually ann then copy reponse as a prompt
