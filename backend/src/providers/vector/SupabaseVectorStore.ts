@@ -24,7 +24,7 @@ export class SupabaseVectorStore implements IVectorStore {
       },
     });
 
-    this.tableName = 'vector_documents';
+    this.tableName = 'chunks';
   }
 
   async upsert(documents: VectorDocument[]): Promise<void> {
@@ -32,8 +32,13 @@ export class SupabaseVectorStore implements IVectorStore {
       const { error } = await this.client.from(this.tableName).upsert(
         documents.map((doc) => ({
           id: doc.id,
+          document_id: doc.metadata?.documentId || null,
+          chunk_index: doc.metadata?.chunkIndex || 0,
           content: doc.content,
+          clean_content: doc.metadata?.cleanContent || doc.content,
           embedding: doc.embedding,
+          token_count: doc.metadata?.tokens || null,
+          char_count: doc.content?.length || 0,
           metadata: doc.metadata,
         })),
         {
@@ -58,10 +63,10 @@ export class SupabaseVectorStore implements IVectorStore {
   ): Promise<SearchResult[]> {
     try {
       // Call the Supabase RPC function for vector similarity search
-      const { data, error } = await this.client.rpc('match_documents', {
+      const { data, error } = await this.client.rpc('match_chunks', {
         query_embedding: queryEmbedding,
         match_count: k,
-        filter: filters || {},
+        filter_party_id: filters?.party_id || null,
       });
 
       if (error) {
