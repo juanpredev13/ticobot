@@ -86,7 +86,7 @@ WITH (m = 16, ef_construction = 64);
 -- Step 6: Create vector similarity search function
 CREATE OR REPLACE FUNCTION match_chunks(
   query_embedding vector(1536),
-  match_threshold float DEFAULT 0.7,
+  match_threshold float DEFAULT 0.45,
   match_count int DEFAULT 5,
   filter_party_id text DEFAULT NULL
 )
