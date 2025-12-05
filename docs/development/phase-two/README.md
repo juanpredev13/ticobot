@@ -29,6 +29,13 @@
    - ContextBuilder
    - ResponseGenerator
 
+3. [04 - RESTful API Implementation Guide](./04-RESTful-API-Implementation-Guide.md) - Issue #27 ✅
+   - Express.js API setup
+   - Chat, Search, and Documents endpoints
+   - Swagger/OpenAPI documentation
+   - Input validation with Zod
+   - Error handling and testing
+
 ### Frontend
 1. [01 - Frontend Implementation](./01%20-%20Frontend%20Implementation%20-%20Core%20Module.md) - Issue #12
    - Next.js setup
