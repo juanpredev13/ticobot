@@ -89,6 +89,7 @@ export class SupabaseVectorStore implements IVectorStore {
           chunk_index: doc.metadata?.chunkIndex || 0,
           content: doc.content,
           clean_content: doc.metadata?.cleanContent || doc.content,
+          // Keep embedding as array - Supabase client handles the conversion
           embedding: doc.embedding,
           token_count: doc.metadata?.tokens || null,
           char_count: doc.content?.length || 0,
@@ -130,6 +131,7 @@ export class SupabaseVectorStore implements IVectorStore {
       // Support both party_id (snake_case) and partyId (camelCase)
       const partyId = filters?.party_id || filters?.partyId || null;
 
+      // Keep embedding as array - Supabase client handles the conversion
       const { data, error } = await this.client.rpc('match_chunks', {
         query_embedding: queryEmbedding,
         match_count: k,

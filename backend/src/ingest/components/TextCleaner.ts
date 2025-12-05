@@ -5,6 +5,18 @@ export interface TextCleaningOptions {
     removeSpecialChars?: boolean;
     fixEncoding?: boolean;
     preservePunctuation?: boolean;
+    extractPageMarkers?: boolean;
+}
+
+export interface PageMarker {
+    pageNumber: number;
+    totalPages: number;
+    position: number;
+}
+
+export interface CleaningResult {
+    cleanedText: string;
+    pageMarkers: PageMarker[];
 }
 
 export class TextCleaner {
@@ -15,44 +27,98 @@ export class TextCleaner {
     }
 
     /**
-     * Clean and normalize text content
+     * Clean and normalize text content with page marker extraction
      * @param text - Raw text to clean
      * @param options - Cleaning options
-     * @returns Cleaned text
+     * @returns Cleaned text and extracted page markers
      */
-    clean(text: string, options: TextCleaningOptions = {}): string {
+    cleanWithMetadata(text: string, options: TextCleaningOptions = {}): CleaningResult {
         const {
             normalizeWhitespace = true,
             removeSpecialChars = true,
             fixEncoding = true,
-            preservePunctuation = true
+            preservePunctuation = true,
+            extractPageMarkers = true
         } = options;
 
         this.logger.info(`Cleaning text (${text.length} characters)`);
 
         let cleaned = text;
+        let pageMarkers: PageMarker[] = [];
 
-        // 1. Fix encoding issues (common in Spanish PDFs)
+        // 1. Extract page markers BEFORE cleaning
+        if (extractPageMarkers) {
+            const result = this.extractPageMarkers(cleaned);
+            cleaned = result.text;
+            pageMarkers = result.markers;
+        }
+
+        // 2. Fix encoding issues (common in Spanish PDFs)
         if (fixEncoding) {
             cleaned = this.fixEncodingIssues(cleaned);
         }
 
-        // 2. Remove or normalize special characters
+        // 3. Remove or normalize special characters
         if (removeSpecialChars) {
             cleaned = this.removeSpecialCharacters(cleaned, preservePunctuation);
         }
 
-        // 3. Normalize whitespace
+        // 4. Normalize whitespace
         if (normalizeWhitespace) {
             cleaned = this.normalizeWhitespace(cleaned);
         }
 
-        // 4. Trim
+        // 5. Trim
         cleaned = cleaned.trim();
 
-        this.logger.info(`Text cleaned (${cleaned.length} characters, ${text.length - cleaned.length} removed)`);
+        this.logger.info(`Text cleaned (${cleaned.length} characters, ${text.length - cleaned.length} removed, ${pageMarkers.length} page markers extracted)`);
 
-        return cleaned;
+        return {
+            cleanedText: cleaned,
+            pageMarkers
+        };
+    }
+
+    /**
+     * Clean text (backwards compatibility)
+     * @param text - Raw text to clean
+     * @param options - Cleaning options
+     * @returns Cleaned text
+     */
+    clean(text: string, options: TextCleaningOptions = {}): string {
+        const result = this.cleanWithMetadata(text, options);
+        return result.cleanedText;
+    }
+
+    /**
+     * Extract page markers from PDF text
+     * Markers follow pattern: -- N of M --
+     * @returns Text with markers removed and array of marker positions
+     */
+    private extractPageMarkers(text: string): { text: string; markers: PageMarker[] } {
+        const markers: PageMarker[] = [];
+        const pageMarkerRegex = /--\s*(\d+)\s+of\s+(\d+)\s*--/gi;
+
+        let match;
+        let position = 0;
+
+        while ((match = pageMarkerRegex.exec(text)) !== null) {
+            const pageNumber = parseInt(match[1], 10);
+            const totalPages = parseInt(match[2], 10);
+
+            markers.push({
+                pageNumber,
+                totalPages,
+                position: match.index - (position * match[0].length) // Adjust for removed markers
+            });
+
+            position++;
+        }
+
+        // Remove all page markers from text
+        const cleanedText = text.replace(pageMarkerRegex, '');
+
+        return { text: cleanedText, markers };
     }
 
     /**
@@ -86,9 +152,29 @@ export class TextCleaner {
         };
 
         let fixed = text;
+
+        // Fix character map issues
         for (const [wrong, correct] of Object.entries(encodingMap)) {
             fixed = fixed.replace(new RegExp(wrong, 'g'), correct);
         }
+
+        // Fix common PDF parsing artifacts
+        // Pattern: word with colon before vowels (:ene, :po, :empo)
+        fixed = fixed.replace(/:([aeiouáéíóú])/g, 'ti$1');
+
+        // Fix software-like patterns (soRware -> software, :po -> tipo)
+        fixed = fixed.replace(/so([A-Z])ware/g, 'software');
+
+        // Fix uppercase letters that should be lowercase in middle of words
+        fixed = fixed.replace(/([a-z])([A-Z])([a-z])/g, (match, before, upper, after) => {
+            // Common patterns: soRware, :po, etc.
+            const lowerMap: Record<string, string> = {
+                'R': 'ft',
+                'Y': 'ft',
+                'n': 'ñ'
+            };
+            return before + (lowerMap[upper] || upper.toLowerCase()) + after;
+        });
 
         return fixed;
     }

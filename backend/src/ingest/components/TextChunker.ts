@@ -1,11 +1,13 @@
 import { get_encoding } from 'tiktoken';
 import { Logger } from '@ticobot/shared';
+import type { PageMarker } from './TextCleaner.js';
 
 export interface ChunkOptions {
-    chunkSize?: number;        // Target tokens per chunk (default: 500)
-    maxChunkSize?: number;     // Maximum tokens per chunk (default: 800)
-    overlapSize?: number;      // Overlap tokens (default: 75)
+    chunkSize?: number;        // Target tokens per chunk (default: 400)
+    maxChunkSize?: number;     // Maximum tokens per chunk (default: 600)
+    overlapSize?: number;      // Overlap tokens (default: 50)
     splitOn?: 'paragraph' | 'sentence' | 'word';
+    pageMarkers?: PageMarker[]; // Optional page markers for metadata
 }
 
 export interface TextChunk {
@@ -16,6 +18,8 @@ export interface TextChunk {
     chunkIndex: number;
     startChar: number;
     endChar: number;
+    pageNumber?: number;        // Page number where chunk starts
+    pageRange?: { start: number; end: number }; // If chunk spans pages
 }
 
 export class TextChunker {
@@ -41,10 +45,11 @@ export class TextChunker {
         options: ChunkOptions = {}
     ): Promise<TextChunk[]> {
         const {
-            chunkSize = 500,
-            maxChunkSize = 800,
-            overlapSize = 75,
-            splitOn = 'paragraph'
+            chunkSize = 400,
+            maxChunkSize = 600,
+            overlapSize = 50,
+            splitOn = 'paragraph',
+            pageMarkers = []
         } = options;
 
         this.logger.info(`Chunking text for ${documentId} (${text.length} chars, target: ${chunkSize} tokens)`);
@@ -70,7 +75,8 @@ export class TextChunker {
                     currentChunk,
                     chunkIndex++,
                     startChar,
-                    startChar + currentChunk.length
+                    startChar + currentChunk.length,
+                    pageMarkers
                 ));
 
                 // Start new chunk with overlap
@@ -91,7 +97,8 @@ export class TextChunker {
                     currentChunk,
                     chunkIndex++,
                     startChar,
-                    startChar + currentChunk.length
+                    startChar + currentChunk.length,
+                    pageMarkers
                 ));
 
                 // Start new chunk with overlap
@@ -109,7 +116,8 @@ export class TextChunker {
                 currentChunk,
                 chunkIndex,
                 startChar,
-                startChar + currentChunk.length
+                startChar + currentChunk.length,
+                pageMarkers
             ));
         }
 
@@ -169,17 +177,21 @@ export class TextChunker {
     }
 
     /**
-     * Create a chunk object
+     * Create a chunk object with page information
      */
     private createChunk(
         documentId: string,
         content: string,
         chunkIndex: number,
         startChar: number,
-        endChar: number
+        endChar: number,
+        pageMarkers: PageMarker[] = []
     ): TextChunk {
         const tokens = this.countTokens(content);
         const chunkId = `${documentId}-chunk-${chunkIndex}`;
+
+        // Find which page(s) this chunk belongs to
+        const pageInfo = this.findPageForChunk(startChar, endChar, pageMarkers);
 
         return {
             chunkId,
@@ -188,8 +200,55 @@ export class TextChunker {
             tokens,
             chunkIndex,
             startChar,
-            endChar
+            endChar,
+            ...pageInfo
         };
+    }
+
+    /**
+     * Determine which page(s) a chunk belongs to based on character positions
+     */
+    private findPageForChunk(
+        startChar: number,
+        endChar: number,
+        pageMarkers: PageMarker[]
+    ): { pageNumber?: number; pageRange?: { start: number; end: number } } {
+        if (pageMarkers.length === 0) {
+            return {};
+        }
+
+        // Find the page markers that fall within or around this chunk
+        const startPage = this.findPageAtPosition(startChar, pageMarkers);
+        const endPage = this.findPageAtPosition(endChar, pageMarkers);
+
+        if (startPage === endPage) {
+            // Chunk is entirely within one page
+            return { pageNumber: startPage };
+        } else if (startPage && endPage) {
+            // Chunk spans multiple pages
+            return { pageRange: { start: startPage, end: endPage } };
+        } else if (startPage) {
+            return { pageNumber: startPage };
+        }
+
+        return {};
+    }
+
+    /**
+     * Find which page a character position belongs to
+     */
+    private findPageAtPosition(position: number, pageMarkers: PageMarker[]): number | undefined {
+        if (pageMarkers.length === 0) return undefined;
+
+        // Find the last marker before this position
+        for (let i = pageMarkers.length - 1; i >= 0; i--) {
+            if (pageMarkers[i].position <= position) {
+                return pageMarkers[i].pageNumber;
+            }
+        }
+
+        // If position is before all markers, assume page 1
+        return 1;
     }
 
     /**
