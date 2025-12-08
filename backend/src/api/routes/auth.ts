@@ -8,6 +8,7 @@ import { TokenRepository } from '../../auth/token.repository.js';
 import { checkLoginAttempts, recordFailedLogin, recordSuccessfulLogin } from '../../auth/login-limiter.js';
 import { logEvent } from '../../auth/audit-logger.js';
 import { createSupabaseClient } from '../../db/supabase.js';
+import { requireAuth } from '../middleware/auth.middleware.js';
 
 const logger = new Logger('AuthRoutes');
 const router: Router = express.Router();
@@ -517,12 +518,39 @@ router.post('/logout', async (req: Request, res: Response, next: NextFunction) =
  *       401:
  *         description: Unauthorized
  */
-router.get('/me', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/me', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // This endpoint requires auth middleware (to be implemented)
-    // For now, return 501 Not Implemented
-    res.status(501).json({
-      error: 'Endpoint requires authentication middleware to be implemented',
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'User not found',
+      });
+    }
+
+    // Get full user data
+    const user = await userRepo.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+      });
+    }
+
+    // Get query stats
+    const stats = await userRepo.getQueryStats(req.user.userId);
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        tier: user.tier,
+        emailVerified: user.email_verified,
+        createdAt: user.created_at,
+      },
+      queryStats: {
+        count: stats.count,
+        limit: stats.limit,
+        remaining: stats.remaining,
+      },
     });
   } catch (error) {
     logger.error('Get user error:', error);

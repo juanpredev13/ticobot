@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { IngestPipeline, IngestOptions } from '../../ingest/components/IngestPipeline';
 import { Logger } from '@ticobot/shared';
+import { requireAuth, requireAdmin } from '../middleware/auth.middleware.js';
 
 const router = Router();
 const logger = new Logger('IngestAPI');
@@ -19,7 +20,7 @@ const logger = new Logger('IngestAPI');
  *   }
  * }
  */
-router.post('/ingest', async (req: Request, res: Response) => {
+router.post('/ingest', requireAuth, requireAdmin, async (req: Request, res: Response) => {
     const { url, documentId, options } = req.body;
 
     if (!url || !documentId) {
@@ -75,7 +76,7 @@ router.post('/ingest', async (req: Request, res: Response) => {
  *   }
  * }
  */
-router.post('/batch', async (req: Request, res: Response) => {
+router.post('/batch', requireAuth, requireAdmin, async (req: Request, res: Response) => {
     const { documents, options } = req.body;
 
     if (!documents || !Array.isArray(documents)) {

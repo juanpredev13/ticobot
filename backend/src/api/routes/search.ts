@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Logger } from '@ticobot/shared';
 import { SemanticSearcher } from '../../rag/components/SemanticSearcher.js';
 import { QueryEmbedder } from '../../rag/components/QueryEmbedder.js';
+import { requireAuth, checkRateLimit } from '../middleware/auth.middleware.js';
 
 const router = Router();
 const logger = new Logger('SearchAPI');
@@ -97,7 +98,7 @@ const searchSchema = z.object({
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requireAuth, checkRateLimit, async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Validate request body
         const params = searchSchema.parse(req.body);
@@ -224,7 +225,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
  *       500:
  *         description: Server error
  */
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', requireAuth, checkRateLimit, async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Map query params to search schema
         const params = searchSchema.parse({
