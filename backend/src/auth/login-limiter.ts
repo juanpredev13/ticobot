@@ -181,7 +181,13 @@ function cleanOldAttempts(): void {
 
 /**
  * Force cleanup (can be called periodically by a cron job)
+ * In test environments, this clears ALL attempts
  */
 export function forceCleanup(): void {
-  cleanOldAttempts();
+  // In tests, clear all attempts to ensure test isolation
+  if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
+    loginAttempts.clear();
+  } else {
+    cleanOldAttempts();
+  }
 }

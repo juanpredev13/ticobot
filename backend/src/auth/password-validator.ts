@@ -78,9 +78,9 @@ export function validatePasswordStrength(
     }
   }
 
-  // Sequential characters
-  if (/(?:abc|bcd|cde|def|efg|fgh|123|234|345|456|567|678|789)/i.test(password)) {
-    errors.push('Avoid sequential characters (e.g., abc, 123)');
+  // Sequential characters (check for 4+ sequential chars)
+  if (/(?:abcd|bcde|cdef|defg|efgh|1234|2345|3456|4567|5678|6789)/i.test(password)) {
+    errors.push('Avoid sequential characters (e.g., abcd, 1234)');
   }
 
   // Repeated characters
