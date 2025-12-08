@@ -5,7 +5,7 @@ import { hashPassword, verifyPassword } from '../../auth/password.utils.js';
 import { generateTokenPair, verifyRefreshToken } from '../../auth/jwt.utils.js';
 import { UserRepository } from '../../auth/user.repository.js';
 import { TokenRepository } from '../../auth/token.repository.js';
-import { checkLoginAttempts, recordFailedLogin, recordSuccessfulLogin } from '../../auth/login-limiter.js';
+import { checkLoginRateLimit, recordLoginAttempt, clearLoginAttempts } from '../../auth/login-limiter.js';
 import { logEvent } from '../../auth/audit-logger.js';
 import { createSupabaseClient } from '../../db/supabase.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
@@ -84,7 +84,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
 
     // Validate password strength
     const passwordValidation = validatePasswordStrength(password, { email });
-    if (!passwordValidation.isValid) {
+    if (!passwordValidation.valid) {
       return res.status(400).json({
         error: 'Password does not meet security requirements',
         details: passwordValidation.errors,
@@ -187,7 +187,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     }
 
     // Check for rate limiting BEFORE attempting login
-    const rateLimitCheck = checkLoginAttempts(email, clientIp);
+    const rateLimitCheck = checkLoginRateLimit(email, clientIp);
     if (!rateLimitCheck.allowed) {
       await logEvent('security', 'warning', 'Login blocked due to rate limiting', {
         email,
@@ -205,7 +205,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     const user = await userRepo.findByEmail(email);
     if (!user) {
       // Record failed attempt
-      recordFailedLogin(email, clientIp);
+      recordLoginAttempt(email, clientIp, false);
 
       await logEvent('auth', 'warning', 'Login failed - user not found', {
         email,
@@ -221,7 +221,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     const isPasswordValid = await verifyPassword(password, user.password_hash);
     if (!isPasswordValid) {
       // Record failed attempt
-      recordFailedLogin(email, clientIp);
+      recordLoginAttempt(email, clientIp, false);
 
       await logEvent('auth', 'warning', 'Login failed - invalid password', {
         email,
@@ -248,7 +248,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     }
 
     // Record successful login (clears failed attempts)
-    recordSuccessfulLogin(email, clientIp);
+    recordLoginAttempt(email, clientIp, true);
 
     // Generate tokens
     const tokens = generateTokenPair({
