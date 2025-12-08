@@ -167,18 +167,12 @@ GRANT EXECUTE ON FUNCTION check_rate_limit TO authenticated;
 GRANT EXECUTE ON FUNCTION revoke_refresh_token TO authenticated;
 GRANT EXECUTE ON FUNCTION clean_expired_tokens TO authenticated;
 
--- Step 12: Create admin user (optional, for testing)
--- Password: admin123 (hashed with bcrypt, rounds=10)
--- IMPORTANT: Change this password in production!
-INSERT INTO users (email, password_hash, name, tier, email_verified)
-VALUES (
-  'admin@ticobot.cr',
-  '$2b$10$rZ8kZKvGcHqCx9YxJQxZXuQN7vZN7bQvK6nPHxZyO5YxJQxZXuQN7u', -- admin123
-  'Admin User',
-  'admin',
-  true
-)
-ON CONFLICT (email) DO NOTHING;
+-- Step 12: Admin user creation
+-- SECURITY: Admin users should NOT be created in migrations
+-- Use the secure setup script instead:
+--   cd backend
+--   pnpm tsx scripts/create-admin.ts
+-- This ensures passwords are never hardcoded in the codebase
 
 -- Step 13: Create indexes for soft deletes and active users
 CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active) WHERE is_active = true;

@@ -41,9 +41,16 @@ const envSchema = z.object({
   PINECONE_ENVIRONMENT: z.string().optional(),
   PINECONE_INDEX_NAME: z.string().optional(),
 
+  // JWT Authentication configuration
+  JWT_SECRET: z.string().min(32).optional(),
+  JWT_ACCESS_EXPIRY: z.string().default('15m'),
+  JWT_REFRESH_EXPIRY: z.string().default('7d'),
+  BCRYPT_ROUNDS: z.coerce.number().default(10),
+
   // Application settings
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3001'),
+  FRONTEND_URL: z.string().default('http://localhost:3000'),
 });
 
 export type Env = z.infer<typeof envSchema>;
