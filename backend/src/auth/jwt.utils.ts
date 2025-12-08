@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { type SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env.js';
 
 export interface JWTPayload {
@@ -15,11 +15,13 @@ export function generateAccessToken(payload: JWTPayload): string {
     throw new Error('JWT_SECRET is not configured');
   }
 
-  return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: env.JWT_ACCESS_EXPIRY,
+  const secret: string = env.JWT_SECRET;
+  const options: SignOptions = {
+    expiresIn: env.JWT_ACCESS_EXPIRY as string,
     issuer: 'ticobot-api',
     audience: 'ticobot-client',
-  });
+  };
+  return jwt.sign(payload, secret, options);
 }
 
 /**
@@ -30,11 +32,13 @@ export function generateRefreshToken(payload: JWTPayload): string {
     throw new Error('JWT_SECRET is not configured');
   }
 
-  return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRY,
+  const secret: string = env.JWT_SECRET;
+  const options: SignOptions = {
+    expiresIn: env.JWT_REFRESH_EXPIRY as string,
     issuer: 'ticobot-api',
     audience: 'ticobot-client',
-  });
+  };
+  return jwt.sign(payload, secret, options);
 }
 
 /**
@@ -45,8 +49,9 @@ export function verifyAccessToken(token: string): JWTPayload {
     throw new Error('JWT_SECRET is not configured');
   }
 
+  const secret: string = env.JWT_SECRET;
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET, {
+    const decoded = jwt.verify(token, secret, {
       issuer: 'ticobot-api',
       audience: 'ticobot-client',
     }) as JWTPayload;
@@ -70,8 +75,9 @@ export function verifyRefreshToken(token: string): JWTPayload {
     throw new Error('JWT_SECRET is not configured');
   }
 
+  const secret: string = env.JWT_SECRET;
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET, {
+    const decoded = jwt.verify(token, secret, {
       issuer: 'ticobot-api',
       audience: 'ticobot-client',
     }) as JWTPayload;
