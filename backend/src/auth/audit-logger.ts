@@ -292,3 +292,24 @@ export async function getUserActivity(userId: string, limit = 100) {
 
   return data || [];
 }
+
+/**
+ * Simplified log event function for quick logging
+ * @param category - Event category
+ * @param severity - Event severity
+ * @param eventType - Description of the event
+ * @param details - Additional event details
+ */
+export async function logEvent(
+  category: EventCategory,
+  severity: EventSeverity,
+  eventType: string,
+  details?: Record<string, any>
+): Promise<void> {
+  await logAuditEvent({
+    category,
+    severity,
+    eventType,
+    details,
+  });
+}
