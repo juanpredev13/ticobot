@@ -176,5 +176,6 @@ GRANT EXECUTE ON FUNCTION clean_expired_tokens TO authenticated;
 
 -- Step 13: Create indexes for soft deletes and active users
 CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active) WHERE is_active = true;
+-- Index for active (non-revoked) refresh tokens - removed NOW() check as it's not IMMUTABLE
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_active ON refresh_tokens(is_revoked, expires_at)
-WHERE is_revoked = false AND expires_at > NOW();
+WHERE is_revoked = false;

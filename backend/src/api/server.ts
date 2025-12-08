@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Logger } from '@ticobot/shared';
 import { swaggerSpec } from './swagger.js';
+import authRoutes from './routes/auth.js';
 import ingestRoutes from './routes/ingest.js';
 import documentsRoutes from './routes/documents.js';
 import searchRoutes from './routes/search.js';
@@ -39,6 +40,7 @@ export function createApp(): Express {
     });
 
     // API Routes
+    app.use('/api/auth', authRoutes);
     app.use('/api/ingest', ingestRoutes);
     app.use('/api/documents', documentsRoutes);
     app.use('/api/search', searchRoutes);
@@ -62,6 +64,13 @@ export function createApp(): Express {
             description: 'API for accessing Costa Rica 2026 Government Plans',
             endpoints: {
                 health: '/health',
+                auth: {
+                    register: 'POST /api/auth/register',
+                    login: 'POST /api/auth/login',
+                    refresh: 'POST /api/auth/refresh',
+                    logout: 'POST /api/auth/logout',
+                    me: 'GET /api/auth/me'
+                },
                 documents: {
                     list: 'GET /api/documents',
                     getById: 'GET /api/documents/:id',
@@ -112,6 +121,7 @@ export function startServer(port: number = 3000): void {
         logger.info(`   API Info: http://localhost:${port}/api`);
         logger.info(`   API Docs: http://localhost:${port}/api/docs`);
         logger.info(`   Health: http://localhost:${port}/health`);
+        logger.info(`   Auth: http://localhost:${port}/api/auth`);
         logger.info(`   Documents: http://localhost:${port}/api/documents`);
         logger.info(`   Search: http://localhost:${port}/api/search`);
         logger.info(`   Chat: http://localhost:${port}/api/chat`);
