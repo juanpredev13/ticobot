@@ -97,7 +97,7 @@ export function verifyRefreshToken(token: string): JWTPayload {
 /**
  * Generate token pair (access + refresh)
  */
-export function generateTokenPair(payload: JWTPayload) {
+export function generateTokenPair(payload: JWTPayload): { accessToken: string; refreshToken: string } {
   return {
     accessToken: generateAccessToken(payload),
     refreshToken: generateRefreshToken(payload),

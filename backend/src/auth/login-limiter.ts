@@ -17,18 +17,21 @@ interface LoginAttempt {
   success: boolean;
 }
 
-// In-memory store (use Redis in production for distributed systems)
-const loginAttempts = new Map<string, LoginAttempt[]>();
-
+// Rate limiting constants
 const MAX_ATTEMPTS_PER_EMAIL = 5;
 const MAX_ATTEMPTS_PER_IP = 10;
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const LOCKOUT_DURATION_MINUTES = 15;
+const LOCKOUT_DURATION_MS = LOCKOUT_DURATION_MINUTES * 60 * 1000;
+
+// In-memory store (use Redis in production for distributed systems)
+const loginAttempts = new Map<string, LoginAttempt[]>();
 
 export interface RateLimitResult {
   allowed: boolean;
   remainingAttempts?: number;
   lockoutUntil?: Date;
   reason?: string;
+  retryAfter?: number;
 }
 
 /**
@@ -59,10 +62,12 @@ export function checkLoginRateLimit(email: string, ip: string): RateLimitResult 
       const lockoutUntil = new Date(
         oldestFailedAttempt.timestamp.getTime() + LOCKOUT_DURATION_MS
       );
+      const retryAfterSeconds = Math.ceil((lockoutUntil.getTime() - now.getTime()) / 1000);
 
       return {
         allowed: false,
         lockoutUntil,
+        retryAfter: retryAfterSeconds,
         reason: `Too many failed login attempts for this account. Please try again after ${lockoutUntil.toLocaleTimeString()}`,
       };
     }
@@ -82,10 +87,12 @@ export function checkLoginRateLimit(email: string, ip: string): RateLimitResult 
       const lockoutUntil = new Date(
         oldestFailedAttempt.timestamp.getTime() + LOCKOUT_DURATION_MS
       );
+      const retryAfterSeconds = Math.ceil((lockoutUntil.getTime() - now.getTime()) / 1000);
 
       return {
         allowed: false,
         lockoutUntil,
+        retryAfter: retryAfterSeconds,
         reason: `Too many failed login attempts from this IP address. Please try again after ${lockoutUntil.toLocaleTimeString()}`,
       };
     }
@@ -138,7 +145,13 @@ export function clearLoginAttempts(email: string): void {
 /**
  * Get current stats for monitoring (admin only)
  */
-export function getLoginStats() {
+export function getLoginStats(): {
+  totalKeys: number;
+  emailKeys: number;
+  ipKeys: number;
+  totalAttempts: number;
+  failedAttempts: number;
+} {
   const stats = {
     totalKeys: loginAttempts.size,
     emailKeys: 0,
