@@ -30,14 +30,19 @@ const COMMON_PASSWORDS = new Set([
  */
 export function validatePasswordStrength(
   password: string,
-  userInputs: string[] = []
+  userInputs: Record<string, string> = {}
 ): PasswordValidationResult {
   const errors: string[] = [];
   const suggestions: string[] = [];
 
+  // Constants for password requirements
+  const MIN_PASSWORD_LENGTH = 12;
+  const MIN_COMPLEXITY_SCORE = 3;
+  const MIN_COMPLEXITY_REQUIREMENTS = 3;
+
   // Length check
-  if (password.length < 12) {
-    errors.push('Password must be at least 12 characters long');
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    errors.push(`Password must be at least ${MIN_PASSWORD_LENGTH} characters long`);
   }
 
   // Common password check
@@ -57,9 +62,9 @@ export function validatePasswordStrength(
   if (hasNumbers) complexityCount++;
   if (hasSpecialChars) complexityCount++;
 
-  if (complexityCount < 3) {
+  if (complexityCount < MIN_COMPLEXITY_REQUIREMENTS) {
     errors.push(
-      'Password must contain at least 3 of: uppercase, lowercase, numbers, special characters'
+      `Password must contain at least ${MIN_COMPLEXITY_REQUIREMENTS} of: uppercase, lowercase, numbers, special characters`
     );
     if (!hasUpperCase) suggestions.push('Add uppercase letters (A-Z)');
     if (!hasLowerCase) suggestions.push('Add lowercase letters (a-z)');
@@ -68,9 +73,10 @@ export function validatePasswordStrength(
   }
 
   // Use zxcvbn for advanced strength testing
-  const result = zxcvbn(password, userInputs);
+  const userInputArray = Object.values(userInputs);
+  const result = zxcvbn(password, userInputArray);
 
-  if (result.score < 3) {
+  if (result.score < MIN_COMPLEXITY_SCORE) {
     errors.push('Password is too weak. Choose a stronger password.');
     suggestions.push(...result.feedback.suggestions);
     if (result.feedback.warning) {

@@ -16,13 +16,14 @@ const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 export type EventCategory = 'auth' | 'query' | 'admin' | 'security';
 export type EventSeverity = 'info' | 'warning' | 'error' | 'critical';
+export type AuditEventDetail = string | number | boolean | null | undefined;
 
 export interface AuditLogEvent {
   userId?: string;
   eventType: string;
   category: EventCategory;
   severity: EventSeverity;
-  details?: Record<string, any>;
+  details?: Record<string, AuditEventDetail>;
 }
 
 /**
@@ -214,9 +215,9 @@ export const auditLog = {
   adminAction: async (
     userId: string,
     action: string,
-    details: Record<string, any>,
+    details: Record<string, AuditEventDetail>,
     req: Request
-  ) => {
+  ): Promise<void> => {
     await logAuditEvent(
       {
         userId,
@@ -263,7 +264,7 @@ export const auditLog = {
 /**
  * Get recent critical events (for admin dashboard)
  */
-export async function getRecentCriticalEvents(limit = 50) {
+export async function getRecentCriticalEvents(limit = 50): Promise<unknown[]> {
   const { data, error } = await supabase.rpc('get_recent_critical_events', {
     limit_param: limit,
   });
@@ -279,7 +280,7 @@ export async function getRecentCriticalEvents(limit = 50) {
 /**
  * Get user activity log
  */
-export async function getUserActivity(userId: string, limit = 100) {
+export async function getUserActivity(userId: string, limit = 100): Promise<unknown[]> {
   const { data, error } = await supabase.rpc('get_user_activity', {
     user_id_param: userId,
     limit_param: limit,
@@ -304,7 +305,7 @@ export async function logEvent(
   category: EventCategory,
   severity: EventSeverity,
   eventType: string,
-  details?: Record<string, any>
+  details?: Record<string, AuditEventDetail>
 ): Promise<void> {
   await logAuditEvent({
     category,

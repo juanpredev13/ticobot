@@ -1,5 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
+// PostgreSQL error codes
+const POSTGRES_NOT_FOUND_CODE = 'PGRST116';
+
 export interface RefreshToken {
   id: string;
   user_id: string;
@@ -11,7 +14,7 @@ export interface RefreshToken {
 }
 
 export class TokenRepository {
-  constructor(private supabase: SupabaseClient) {}
+  constructor(private readonly supabase: SupabaseClient) {}
 
   /**
    * Create a new refresh token
@@ -31,7 +34,9 @@ export class TokenRepository {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data as RefreshToken;
   }
 
@@ -47,7 +52,9 @@ export class TokenRepository {
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === POSTGRES_NOT_FOUND_CODE) {
+        return null;
+      }
       throw error;
     }
 
@@ -58,7 +65,7 @@ export class TokenRepository {
    * Find token with user info (for reuse detection)
    * This checks ALL tokens, including revoked ones
    */
-  async findByTokenWithUser(token: string): Promise<(RefreshToken & { user_id: string }) | null> {
+  async findByTokenWithUser(token: string): Promise<RefreshToken | null> {
     const { data, error } = await this.supabase
       .from('refresh_tokens')
       .select('*')
@@ -66,11 +73,13 @@ export class TokenRepository {
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === POSTGRES_NOT_FOUND_CODE) {
+        return null;
+      }
       throw error;
     }
 
-    return data as RefreshToken & { user_id: string };
+    return data as RefreshToken;
   }
 
   /**
@@ -120,7 +129,9 @@ export class TokenRepository {
       })
       .eq('user_id', userId);
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
   }
 
   /**
@@ -129,7 +140,9 @@ export class TokenRepository {
   async cleanExpiredTokens(): Promise<number> {
     const { data, error } = await this.supabase.rpc('clean_expired_tokens');
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data as number;
   }
 }

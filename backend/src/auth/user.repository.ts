@@ -1,5 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
+// Query limit constants
+const DEFAULT_QUERY_LIMIT_FREE = 10;
+const DEFAULT_QUERY_LIMIT_PREMIUM = 100;
+const DEFAULT_QUERY_LIMIT_ADMIN = 999999;
+
 export interface User {
   id: string;
   email: string;
@@ -29,7 +34,7 @@ export interface UpdateUserData {
 }
 
 export class UserRepository {
-  constructor(private supabase: SupabaseClient) {}
+  constructor(private readonly supabase: SupabaseClient) {}
 
   /**
    * Create a new user
@@ -153,17 +158,25 @@ export class UserRepository {
    */
   async hasExceededQueryLimit(userId: string): Promise<boolean> {
     const user = await this.findById(userId);
-    if (!user) return true; // User not found = limit exceeded
+    if (!user) {
+      return true; // User not found = limit exceeded
+    }
 
-    // Get daily limit based on tier
-    const limits = {
-      free: 10,
-      premium: 100,
-      admin: Infinity,
+    const limit = this.getQueryLimitForTier(user.tier);
+    return user.query_count_today >= limit;
+  }
+
+  /**
+   * Get query limit based on user tier
+   */
+  private getQueryLimitForTier(tier: 'free' | 'premium' | 'admin'): number {
+    const limits: Record<'free' | 'premium' | 'admin', number> = {
+      free: DEFAULT_QUERY_LIMIT_FREE,
+      premium: DEFAULT_QUERY_LIMIT_PREMIUM,
+      admin: DEFAULT_QUERY_LIMIT_ADMIN,
     };
 
-    const limit = limits[user.tier];
-    return user.query_count_today >= limit;
+    return limits[tier];
   }
 
   /**
@@ -179,13 +192,7 @@ export class UserRepository {
       return { count: 0, limit: 0, remaining: 0 };
     }
 
-    const limits = {
-      free: 10,
-      premium: 100,
-      admin: 999999, // Effectively unlimited
-    };
-
-    const limit = limits[user.tier];
+    const limit = this.getQueryLimitForTier(user.tier);
     const count = user.query_count_today;
     const remaining = Math.max(0, limit - count);
 
@@ -270,7 +277,9 @@ export class UserRepository {
       .select('tier')
       .eq('is_active', true);
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
     const counts: Record<string, number> = {
       free: 0,
@@ -278,9 +287,11 @@ export class UserRepository {
       admin: 0,
     };
 
-    data?.forEach((user) => {
-      counts[user.tier] = (counts[user.tier] || 0) + 1;
-    });
+    if (data) {
+      data.forEach((user) => {
+        counts[user.tier] = (counts[user.tier] || 0) + 1;
+      });
+    }
 
     return counts;
   }
