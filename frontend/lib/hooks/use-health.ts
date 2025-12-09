@@ -4,13 +4,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { healthService } from '../api/services';
-
-// Query keys
-export const healthKeys = {
-  all: ['health'] as const,
-  check: () => [...healthKeys.all, 'check'] as const,
-  diagnostics: () => [...healthKeys.all, 'diagnostics'] as const,
-};
+import { healthKeys } from './query-keys';
 
 /**
  * Hook for health check
@@ -21,6 +15,7 @@ export function useHealth(refetchInterval?: number) {
     queryFn: () => healthService.check(),
     staleTime: 30 * 1000, // 30 seconds
     refetchInterval: refetchInterval || false,
+    retry: 2, // Retry twice for health checks
   });
 }
 
@@ -32,5 +27,6 @@ export function useDiagnostics() {
     queryKey: healthKeys.diagnostics(),
     queryFn: () => healthService.diagnostics(),
     staleTime: 60 * 1000, // 1 minute
+    retry: 1, // Retry once on failure
   });
 }
