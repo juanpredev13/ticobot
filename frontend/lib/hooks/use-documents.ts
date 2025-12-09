@@ -4,17 +4,10 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { documentsService } from '../api/services';
+import { documentKeys } from './query-keys';
+import { toast } from '../toast';
+import { APIError } from '../api/client';
 import type { DocumentListRequest } from '../api/types';
-
-// Query keys for cache management
-export const documentKeys = {
-  all: ['documents'] as const,
-  lists: () => [...documentKeys.all, 'list'] as const,
-  list: (params?: DocumentListRequest) => [...documentKeys.lists(), params] as const,
-  details: () => [...documentKeys.all, 'detail'] as const,
-  detail: (id: string) => [...documentKeys.details(), id] as const,
-  chunks: (id: string) => [...documentKeys.detail(id), 'chunks'] as const,
-};
 
 /**
  * Hook to fetch list of documents
@@ -24,6 +17,7 @@ export function useDocuments(params?: DocumentListRequest) {
     queryKey: documentKeys.list(params),
     queryFn: () => documentsService.list(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1, // Retry once on failure
   });
 }
 
@@ -36,6 +30,7 @@ export function useDocument(id: string, enabled = true) {
     queryFn: () => documentsService.getById(id),
     enabled: enabled && !!id,
     staleTime: 10 * 60 * 1000, // 10 minutes
+    retry: 1, // Retry once on failure
   });
 }
 
@@ -48,6 +43,7 @@ export function useDocumentChunks(id: string, enabled = true) {
     queryFn: () => documentsService.getChunks(id),
     enabled: enabled && !!id,
     staleTime: 10 * 60 * 1000, // 10 minutes
+    retry: 1, // Retry once on failure
   });
 }
 
