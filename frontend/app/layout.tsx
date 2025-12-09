@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header"
 import { BottomMobileNav } from "@/components/bottom-mobile-nav"
 import { QueryProvider } from "@/components/providers/query-provider"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "sonner"
 
 const unbounded = Unbounded({
   subsets: ["latin"],
@@ -61,6 +62,7 @@ export default function RootLayout({
             <SiteHeader />
             <div className="pb-16 md:pb-0">{children}</div>
             <BottomMobileNav />
+            <Toaster position="top-right" richColors />
           </QueryProvider>
         </ThemeProvider>
       </body>
