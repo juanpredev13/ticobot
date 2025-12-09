@@ -1,13 +1,15 @@
 "use client"
 
-import { useState } from "react"
-import { Search, Grid3X3, List, Download, FileText, Filter, X } from "lucide-react"
+import { useState, useMemo } from "react"
+import { Search, Grid3X3, List, Download, FileText, Filter, X, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useDocuments } from "@/lib/hooks"
 
 type Document = {
   id: string
@@ -157,6 +159,9 @@ export default function DocumentsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [showFilters, setShowFilters] = useState(false)
 
+  // Fetch documents from API
+  const { data, isLoading, isError, error, refetch } = useDocuments()
+
   const handlePartyToggle = (party: string) => {
     setSelectedParties((prev) => (prev.includes(party) ? prev.filter((p) => p !== party) : [...prev, party]))
   }
@@ -167,16 +172,43 @@ export default function DocumentsPage() {
     setSearchQuery("")
   }
 
-  const filteredDocuments = MOCK_DOCUMENTS.filter((doc) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.party.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesParty = selectedParties.length === 0 || selectedParties.includes(doc.party)
-    const matchesStatus = selectedStatus === "all" || doc.status === selectedStatus
+  // Get unique parties from documents
+  const uniqueParties = useMemo(() => {
+    if (!data?.documents) return []
+    const parties = new Set(data.documents.map((doc) => doc.party))
+    return Array.from(parties).sort()
+  }, [data])
 
-    return matchesSearch && matchesParty && matchesStatus
-  })
+  // Map API documents to component format and apply filters
+  const filteredDocuments = useMemo(() => {
+    if (!data?.documents) return []
+
+    return data.documents
+      .map((doc) => ({
+        id: doc.id,
+        title: doc.title,
+        party: doc.party,
+        candidate: undefined, // Not in API response
+        pages: 0, // Not in API response
+        fileSize: '0 MB', // Not in API response
+        date: doc.downloadedAt || doc.processedAt || new Date().toISOString(),
+        year: 2026,
+        status: (doc.processedAt ? 'indexed' : 'pending') as Document['status'],
+        category: 'Plan de Gobierno',
+        url: doc.url,
+        aiUsagePercentage: doc.processedAt ? 100 : 0,
+      }))
+      .filter((doc) => {
+        const matchesSearch =
+          searchQuery === '' ||
+          doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          doc.party.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchesParty = selectedParties.length === 0 || selectedParties.includes(doc.party)
+        const matchesStatus = selectedStatus === 'all' || doc.status === selectedStatus
+
+        return matchesSearch && matchesParty && matchesStatus
+      })
+  }, [data, searchQuery, selectedParties, selectedStatus])
 
   const getStatusBadge = (status: Document["status"]) => {
     switch (status) {
@@ -216,6 +248,57 @@ export default function DocumentsPage() {
     )
   }
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="mb-2 text-3xl font-bold">Explorador de documentos</h1>
+            <p className="text-muted-foreground">Navega y descarga los documentos oficiales de los partidos políticos</p>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(8)].map((_, i) => (
+              <Card key={i} className="flex flex-col">
+                <CardHeader>
+                  <Skeleton className="mb-3 size-12 rounded-lg" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-20 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <Card className="border-destructive">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <AlertCircle className="mb-4 size-12 text-destructive" />
+              <h3 className="mb-2 text-lg font-semibold">Error al cargar documentos</h3>
+              <p className="mb-4 text-sm text-muted-foreground">
+                {error instanceof Error ? error.message : 'Ocurrió un error al cargar los documentos'}
+              </p>
+              <Button onClick={() => refetch()}>Reintentar</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  const totalDocuments = data?.documents.length || 0
+  const indexedCount = filteredDocuments.filter((d) => d.status === 'indexed').length
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -231,28 +314,26 @@ export default function DocumentsPage() {
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="py-4">
             <CardContent>
-              <div className="text-2xl font-bold">{MOCK_DOCUMENTS.length}</div>
+              <div className="text-2xl font-bold">{totalDocuments}</div>
               <div className="text-sm text-muted-foreground">Total documentos</div>
             </CardContent>
           </Card>
           <Card className="py-4">
             <CardContent>
-              <div className="text-2xl font-bold">{MOCK_DOCUMENTS.filter((d) => d.status === "indexed").length}</div>
+              <div className="text-2xl font-bold">{indexedCount}</div>
               <div className="text-sm text-muted-foreground">Indexados</div>
             </CardContent>
           </Card>
           <Card className="py-4">
             <CardContent>
-              <div className="text-2xl font-bold">{PARTIES.length}</div>
+              <div className="text-2xl font-bold">{uniqueParties.length}</div>
               <div className="text-sm text-muted-foreground">Partidos</div>
             </CardContent>
           </Card>
           <Card className="py-4">
             <CardContent>
-              <div className="text-2xl font-bold">
-                {MOCK_DOCUMENTS.reduce((acc, doc) => acc + doc.pages, 0).toLocaleString()}
-              </div>
-              <div className="text-sm text-muted-foreground">Páginas totales</div>
+              <div className="text-2xl font-bold">{data?.pagination.total || 0}</div>
+              <div className="text-sm text-muted-foreground">Total en sistema</div>
             </CardContent>
           </Card>
         </div>
@@ -333,7 +414,7 @@ export default function DocumentsPage() {
                 <div>
                   <h4 className="mb-3 text-sm font-medium">Partidos políticos</h4>
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {PARTIES.map((party) => (
+                    {uniqueParties.map((party) => (
                       <div key={party} className="flex items-center gap-2">
                         <Checkbox
                           id={party}
@@ -357,7 +438,7 @@ export default function DocumentsPage() {
 
         {/* Results Count */}
         <div className="mb-4 text-sm text-muted-foreground">
-          Mostrando {filteredDocuments.length} de {MOCK_DOCUMENTS.length} documentos
+          Mostrando {filteredDocuments.length} de {totalDocuments} documentos
         </div>
 
         {/* Documents Grid/List */}

@@ -4,6 +4,8 @@ import { Unbounded, Geist } from "next/font/google"
 import "./globals.css"
 import { SiteHeader } from "@/components/site-header"
 import { BottomMobileNav } from "@/components/bottom-mobile-nav"
+import { QueryProvider } from "@/components/providers/query-provider"
+import { ThemeProvider } from "@/components/theme-provider"
 
 const unbounded = Unbounded({
   subsets: ["latin"],
@@ -47,11 +49,20 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body className={`${unbounded.variable} ${geist.variable} font-sans antialiased`}>
-        <SiteHeader />
-        <div className="pb-16 md:pb-0">{children}</div>
-        <BottomMobileNav />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <QueryProvider>
+            <SiteHeader />
+            <div className="pb-16 md:pb-0">{children}</div>
+            <BottomMobileNav />
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
