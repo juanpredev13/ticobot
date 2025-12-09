@@ -4,14 +4,68 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Search } from "lucide-react"
+import { Search, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
+import { useDocuments, useHealth } from "@/lib/hooks"
+import { PageErrorBoundary } from "@/components/page-error-boundary"
 
-export default function HomePage() {
+// Static data for parties (since API doesn't have parties endpoint yet)
+const PARTIES = [
+  { id: "pln", name: "Partido Liberación Nacional" },
+  { id: "pusc", name: "Partido Unidad Social Cristiana" },
+  { id: "pac", name: "Partido Acción Ciudadana" },
+  { id: "fa", name: "Frente Amplio" },
+  { id: "prn", name: "Restauración Nacional" },
+  { id: "plp", name: "Liberal Progresista" },
+  { id: "pnr", name: "Nueva República" },
+  { id: "pin", name: "Partido Integración Nacional" },
+]
+
+// Static data for candidates (since API doesn't have candidates endpoint yet)
+const CANDIDATES = [
+  {
+    name: "José María Figueres Olsen",
+    party: "Partido Liberación Nacional",
+    position: "Candidato a Presidente",
+    id: "jose-maria-figueres",
+  },
+  {
+    name: "Fabricio Alvarado Muñoz",
+    party: "Nueva República",
+    position: "Candidato a Presidente",
+    id: "fabricio-alvarado",
+  },
+  {
+    name: "Carlos Alvarado Quesada",
+    party: "Partido Acción Ciudadana",
+    position: "Candidato a Presidente",
+    id: "carlos-alvarado",
+  },
+  {
+    name: "Rodrigo Chaves Robles",
+    party: "Partido Progreso Social Democrático",
+    position: "Candidato a Presidente",
+    id: "rodrigo-chaves",
+  },
+]
+
+function HomeContent() {
   const [searchQuery, setSearchQuery] = useState("")
   const router = useRouter()
+
+  // Fetch real data from API
+  const { data: documentsData, isLoading: documentsLoading } = useDocuments()
+  const { data: healthData, isLoading: healthLoading } = useHealth()
+
+  // Calculate stats from real data
+  const stats = {
+    parties: PARTIES.length,
+    documents: documentsData?.pagination.total || 0,
+    verified: healthData?.status === "healthy" ? "100%" : "N/A",
+    status: healthData?.status === "healthy" ? "Neutral" : "Verificando",
+  }
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -81,19 +135,27 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-12">
           <div className="grid gap-8 md:grid-cols-4">
             <div className="text-center">
-              <div className="mb-2 text-3xl font-bold">12</div>
+              <div className="mb-2 text-3xl font-bold">
+                {documentsLoading ? <Loader2 className="inline size-8 animate-spin" /> : stats.parties}
+              </div>
               <div className="text-sm text-muted-foreground">Partidos registrados</div>
             </div>
             <div className="text-center">
-              <div className="mb-2 text-3xl font-bold">150+</div>
+              <div className="mb-2 text-3xl font-bold">
+                {documentsLoading ? <Loader2 className="inline size-8 animate-spin" /> : `${stats.documents}+`}
+              </div>
               <div className="text-sm text-muted-foreground">Documentos analizados</div>
             </div>
             <div className="text-center">
-              <div className="mb-2 text-3xl font-bold">100%</div>
+              <div className="mb-2 text-3xl font-bold">
+                {healthLoading ? <Loader2 className="inline size-8 animate-spin" /> : stats.verified}
+              </div>
               <div className="text-sm text-muted-foreground">Información verificada</div>
             </div>
             <div className="text-center">
-              <div className="mb-2 text-3xl font-bold">Neutral</div>
+              <div className="mb-2 text-3xl font-bold">
+                {healthLoading ? <Loader2 className="inline size-8 animate-spin" /> : stats.status}
+              </div>
               <div className="text-sm text-muted-foreground">Sin sesgo político</div>
             </div>
           </div>
@@ -108,25 +170,16 @@ export default function HomePage() {
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {[
-            "Partido Liberación Nacional",
-            "Partido Unidad Social Cristiana",
-            "Partido Acción Ciudadana",
-            "Frente Amplio",
-            "Restauración Nacional",
-            "Liberal Progresista",
-            "Nueva República",
-            "Partido Integración Nacional",
-          ].map((party, index) => (
+          {PARTIES.map((party) => (
             <Link
-              key={index}
-              href={index === 0 ? "/party/pln" : `/compare?party=${index}`}
+              key={party.id}
+              href={`/party/${party.id}`}
               className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
             >
               <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-muted">
-                <span className="text-lg font-bold text-muted-foreground">{party.charAt(0)}</span>
+                <span className="text-lg font-bold text-muted-foreground">{party.name.charAt(0)}</span>
               </div>
-              <h3 className="mb-2 font-semibold group-hover:text-primary">{party}</h3>
+              <h3 className="mb-2 font-semibold group-hover:text-primary">{party.name}</h3>
               <p className="text-sm text-muted-foreground">Ver propuestas y documentos</p>
             </Link>
           ))}
@@ -141,34 +194,9 @@ export default function HomePage() {
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {[
-            {
-              name: "José María Figueres Olsen",
-              party: "Partido Liberación Nacional",
-              position: "Candidato a Presidente",
-              id: "jose-maria-figueres",
-            },
-            {
-              name: "Fabricio Alvarado Muñoz",
-              party: "Nueva República",
-              position: "Candidato a Presidente",
-              id: "fabricio-alvarado",
-            },
-            {
-              name: "Carlos Alvarado Quesada",
-              party: "Partido Acción Ciudadana",
-              position: "Candidato a Presidente",
-              id: "carlos-alvarado",
-            },
-            {
-              name: "Rodrigo Chaves Robles",
-              party: "Partido Progreso Social Democrático",
-              position: "Candidato a Presidente",
-              id: "rodrigo-chaves",
-            },
-          ].map((candidate, index) => (
+          {CANDIDATES.map((candidate) => (
             <Link
-              key={index}
+              key={candidate.id}
               href={`/candidate/${candidate.id}`}
               className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
             >
@@ -266,5 +294,13 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <PageErrorBoundary>
+      <HomeContent />
+    </PageErrorBoundary>
   )
 }
