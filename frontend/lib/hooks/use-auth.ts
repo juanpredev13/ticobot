@@ -65,7 +65,7 @@ export function useRegister() {
 }
 
 /**
- * Hook for user login
+ * Hook for user login with optimistic updates
  */
 export function useLogin() {
   const queryClient = useQueryClient();
@@ -80,9 +80,25 @@ export function useLogin() {
       // Retry up to 2 times on server errors (5xx)
       return failureCount < 2;
     },
+    onMutate: async (request) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: authKeys.user() });
+
+      // Snapshot the previous value for rollback
+      const previousUser = queryClient.getQueryData(authKeys.user());
+
+      // Optimistically update the user data with basic info
+      queryClient.setQueryData(authKeys.user(), {
+        email: request.email,
+        // Note: We don't have full user data yet, server will provide it
+      });
+
+      // Return context with the previous value for rollback
+      return { previousUser };
+    },
     onSuccess: (data) => {
       toast.success('Sesión iniciada correctamente');
-      // Cache user data after login
+      // Update with actual user data from server
       queryClient.setQueryData(authKeys.user(), data.user);
       // Invalidate auth queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: authKeys.all });
@@ -92,7 +108,12 @@ export function useLogin() {
         localStorage.setItem('refreshToken', data.refreshToken);
       }
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback to previous user data on error
+      if (context?.previousUser) {
+        queryClient.setQueryData(authKeys.user(), context.previousUser);
+      }
+
       let message = 'Error al iniciar sesión. Por favor, intenta de nuevo.';
 
       if (error instanceof APIError) {
@@ -145,13 +166,26 @@ export function useRefreshToken() {
 }
 
 /**
- * Hook for user logout
+ * Hook for user logout with optimistic updates
  */
 export function useLogout() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: () => authService.logout(),
+    onMutate: async () => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: authKeys.user() });
+
+      // Snapshot the previous user data for potential rollback
+      const previousUser = queryClient.getQueryData(authKeys.user());
+
+      // Optimistically clear user data
+      queryClient.setQueryData(authKeys.user(), null);
+
+      // Return context for rollback
+      return { previousUser };
+    },
     onSuccess: () => {
       toast.success('Sesión cerrada correctamente');
 
@@ -170,7 +204,10 @@ export function useLogout() {
         localStorage.removeItem('refreshToken');
       }
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback user data if server logout failed but we want to keep session
+      // However, for security reasons, we still clear local data even on error
+
       // Even if logout fails on server, clear local data
       queryClient.removeQueries({ queryKey: authKeys.all });
       if (typeof window !== 'undefined') {
