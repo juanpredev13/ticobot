@@ -2,25 +2,33 @@
 
 import { useState, useEffect, useRef, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import { Send, Loader2, MessageSquare, FileText, ExternalLink, Trash2 } from "lucide-react"
+import { Send, Loader2, MessageSquare, FileText, ExternalLink, Trash2, StopCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { getUsageStatus, incrementChatUsage, canSendMessage, type UsageStatus } from "@/lib/usage-tracker"
 import { UsageBanner } from "@/components/usage-banner"
 import { AuthDialog } from "@/components/auth-dialog"
+import { useChat, useChatStream, useUser } from "@/lib/hooks"
+import { PageErrorBoundary } from "@/components/page-error-boundary"
+import type { ChatResponse } from "@/lib/api/types"
 
 type Message = {
   id: string
   role: "user" | "assistant"
   content: string
   sources?: Array<{
-    party: string
-    document: string
-    page: number
-    excerpt: string
-    url: string
+    title: string
+    content: string
+    score: number
+    metadata?: {
+      page?: number
+      party?: string
+      document?: string
+    }
   }>
   timestamp: Date
 }
@@ -34,66 +42,30 @@ const SUGGESTED_QUESTIONS = [
   "¿Cómo abordan la seguridad ciudadana?",
 ]
 
-const MOCK_RESPONSE = {
-  content:
-    "Los partidos políticos presentan diversas propuestas sobre educación. El PLN propone implementar tecnología en todas las aulas para 2026 y un programa nacional de inglés desde preescolar. El PAC enfatiza el fortalecimiento de la educación pública gratuita y la capacitación continua para docentes. El Frente Amplio propone la eliminación de las pruebas estandarizadas y educación sexual integral obligatoria.",
-  sources: [
-    {
-      party: "Partido Liberación Nacional",
-      document: "Plan de Gobierno 2024-2028",
-      page: 45,
-      excerpt: "Implementación de tecnología en todas las aulas para 2026 y programa nacional de inglés...",
-      url: "#",
-    },
-    {
-      party: "Partido Acción Ciudadana",
-      document: "Propuesta Electoral 2024",
-      page: 23,
-      excerpt: "Fortalecimiento de la educación pública gratuita con énfasis en la capacitación docente...",
-      url: "#",
-    },
-    {
-      party: "Frente Amplio",
-      document: "Programa Político 2024-2028",
-      page: 18,
-      excerpt: "Transformación del sistema educativo hacia la equidad social, eliminando pruebas...",
-      url: "#",
-    },
-  ],
-}
-
 function ChatContent() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [usageStatus, setUsageStatus] = useState<UsageStatus | null>(null)
+  const [conversationId, setConversationId] = useState<string>("")
+  const [streamingEnabled, setStreamingEnabled] = useState(true)
   const [showAuthDialog, setShowAuthDialog] = useState(false)
   const [authMode, setAuthMode] = useState<AuthMode>("signup")
-  const [userName, setUserName] = useState<string | null>(null)
+  const [usageStatus, setUsageStatus] = useState<UsageStatus | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const inputContainerRef = useRef<HTMLDivElement>(null)
   const searchParams = useSearchParams()
 
+  // React Query hooks
+  const { data: user, isLoading: userLoading } = useUser()
+  const chatMutation = useChat()
+  const { startStream, stopStream, isStreaming, streamedContent, reset: resetStream } = useChatStream()
+
+  const isAuthenticated = !!user
+  const isLoading = chatMutation.isPending || isStreaming
+
   useEffect(() => {
-    const checkAuth = () => {
-      const isAuth = localStorage.getItem("ticobot_auth") === "true"
-      setIsAuthenticated(isAuth)
-
-      if (isAuth) {
-        const user = localStorage.getItem("ticobot_user")
-        if (user) {
-          const userData = JSON.parse(user)
-          setUserName(userData.name)
-        }
-      }
-
-      setUsageStatus(getUsageStatus(isAuth))
-    }
-
-    checkAuth()
-  }, [])
+    setUsageStatus(getUsageStatus(isAuthenticated))
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (searchParams.get("focus") === "true") {
@@ -144,91 +116,92 @@ function ChatContent() {
     }
 
     setMessages((prev) => [...prev, userMessage])
+    const query = inputValue
     setInputValue("")
-    setIsLoading(true)
 
     incrementChatUsage(isAuthenticated)
     setUsageStatus(getUsageStatus(isAuthenticated))
 
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: MOCK_RESPONSE.content,
-        sources: MOCK_RESPONSE.sources,
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, assistantMessage])
-      setIsLoading(false)
-    }, 1500)
+    if (streamingEnabled) {
+      // Use streaming chat
+      resetStream()
+
+      // Add placeholder for streaming message
+      const streamMessageId = (Date.now() + 1).toString()
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: streamMessageId,
+          role: "assistant",
+          content: "",
+          timestamp: new Date(),
+        },
+      ])
+
+      await startStream({
+        query,
+        conversationId: conversationId || undefined,
+      })
+    } else {
+      // Use normal chat
+      chatMutation.mutate(
+        {
+          query,
+          conversationId: conversationId || undefined,
+        },
+        {
+          onSuccess: (data: ChatResponse) => {
+            // Update conversation ID
+            setConversationId(data.conversationId)
+
+            // Add assistant message
+            const assistantMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              role: "assistant",
+              content: data.answer,
+              sources: data.sources,
+              timestamp: new Date(),
+            }
+            setMessages((prev) => [...prev, assistantMessage])
+          },
+        }
+      )
+    }
   }
+
+  // Update streaming content in real-time
+  useEffect(() => {
+    if (streamedContent && isStreaming) {
+      setMessages((prev) => {
+        const updated = [...prev]
+        const lastMessage = updated[updated.length - 1]
+        if (lastMessage && lastMessage.role === "assistant") {
+          lastMessage.content = streamedContent
+        }
+        return updated
+      })
+    }
+  }, [streamedContent, isStreaming])
 
   const handleSuggestedQuestion = (question: string) => {
     setInputValue(question)
     setTimeout(() => {
-      handleSendMessageWithQuestion(question)
+      // Trigger send with the question
+      const event = new KeyboardEvent("keydown", { key: "Enter" })
+      inputRef.current?.dispatchEvent(event)
+      // Or directly call handleSendMessage after setting input
+      handleSendMessage()
     }, 100)
-  }
-
-  const handleSendMessageWithQuestion = async (question: string) => {
-    if (!question.trim() || isLoading) return
-
-    if (!canSendMessage(isAuthenticated)) {
-      if (!isAuthenticated) {
-        setShowAuthDialog(true)
-        setAuthMode("signup")
-      }
-      return
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: question,
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setInputValue("")
-    setIsLoading(true)
-
-    incrementChatUsage(isAuthenticated)
-    setUsageStatus(getUsageStatus(isAuthenticated))
-
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: MOCK_RESPONSE.content,
-        sources: MOCK_RESPONSE.sources,
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, assistantMessage])
-      setIsLoading(false)
-    }, 1500)
   }
 
   const handleClearHistory = () => {
     setMessages([])
+    setConversationId("")
   }
 
   const handleAuthSuccess = () => {
-    setIsAuthenticated(true)
     setShowAuthDialog(false)
-    const user = localStorage.getItem("ticobot_user")
-    if (user) {
-      const userData = JSON.parse(user)
-      setUserName(userData.name)
-    }
     setUsageStatus(getUsageStatus(true))
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem("ticobot_auth")
-    localStorage.removeItem("ticobot_user")
-    setIsAuthenticated(false)
-    setUserName(null)
-    setUsageStatus(getUsageStatus(false))
   }
 
   const handleUpgrade = () => {
@@ -248,12 +221,26 @@ function ChatContent() {
                 Pregunta sobre propuestas políticas y obtén respuestas con fuentes verificadas
               </p>
             </div>
-            {messages.length > 0 && (
-              <Button variant="outline" size="sm" onClick={handleClearHistory}>
-                <Trash2 className="size-4" />
-                Limpiar
-              </Button>
-            )}
+            <div className="flex items-center gap-3">
+              {/* Streaming Toggle */}
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="streaming-mode"
+                  checked={streamingEnabled}
+                  onCheckedChange={setStreamingEnabled}
+                  disabled={isLoading}
+                />
+                <Label htmlFor="streaming-mode" className="text-sm cursor-pointer">
+                  Streaming
+                </Label>
+              </div>
+              {messages.length > 0 && (
+                <Button variant="outline" size="sm" onClick={handleClearHistory}>
+                  <Trash2 className="size-4" />
+                  Limpiar
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -342,24 +329,21 @@ function ChatContent() {
                                   <div key={index} className="rounded-lg border border-border bg-muted/30 p-3">
                                     <div className="mb-1 flex items-start justify-between gap-2">
                                       <div>
-                                        <div className="text-xs font-semibold">{source.party}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                          {source.document}, pág. {source.page}
-                                        </div>
+                                        <div className="text-xs font-semibold">{source.title}</div>
+                                        {source.metadata?.party && (
+                                          <div className="text-xs text-muted-foreground">
+                                            {source.metadata.party}
+                                            {source.metadata.page && `, pág. ${source.metadata.page}`}
+                                          </div>
+                                        )}
                                       </div>
                                       <Badge variant="secondary" className="shrink-0 text-xs">
-                                        p. {source.page}
+                                        {(source.score * 100).toFixed(0)}%
                                       </Badge>
                                     </div>
-                                    <p className="mb-2 text-xs leading-relaxed text-muted-foreground">
-                                      {source.excerpt}
+                                    <p className="mb-2 text-xs leading-relaxed text-muted-foreground line-clamp-3">
+                                      {source.content}
                                     </p>
-                                    <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
-                                      <a href={source.url} target="_blank" rel="noopener noreferrer">
-                                        Ver documento
-                                        <ExternalLink className="ml-1 size-3" />
-                                      </a>
-                                    </Button>
                                   </div>
                                 ))}
                               </div>
@@ -403,13 +387,19 @@ function ChatContent() {
                       disabled={isLoading || (usageStatus?.limitReached ?? false)}
                       className="flex-1"
                     />
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={!inputValue.trim() || isLoading || (usageStatus?.limitReached ?? false)}
-                      size="icon"
-                    >
-                      {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                    </Button>
+                    {isStreaming ? (
+                      <Button onClick={stopStream} variant="destructive" size="icon">
+                        <StopCircle className="size-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={!inputValue.trim() || isLoading || (usageStatus?.limitReached ?? false)}
+                        size="icon"
+                      >
+                        {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                      </Button>
+                    )}
                   </div>
                   <div className="mt-2 text-xs text-muted-foreground">
                     Presiona Enter para enviar • Shift + Enter para nueva línea
@@ -496,14 +486,16 @@ function ChatContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loader2 className="size-8 animate-spin" />
-        </div>
-      }
-    >
-      <ChatContent />
-    </Suspense>
+    <PageErrorBoundary>
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-background flex items-center justify-center">
+            <Loader2 className="size-8 animate-spin" />
+          </div>
+        }
+      >
+        <ChatContent />
+      </Suspense>
+    </PageErrorBoundary>
   )
 }
