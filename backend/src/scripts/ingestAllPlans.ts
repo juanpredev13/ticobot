@@ -11,7 +11,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // List of all political parties with government plans for 2026
-// Source: https://www.tse.go.cr/2026/docus/planesgobierno/
+// Source: Scraped from https://www.tse.go.cr/2026/planesgobierno.html
+// Last updated: Auto-scraped
 const TSE_PLANS = [
   {
     documentId: 'pln-2026',
@@ -20,30 +21,119 @@ const TSE_PLANS = [
     url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PLN.pdf'
   },
   {
-    documentId: 'pac-2026',
-    partyName: 'Partido Acción Ciudadana',
-    partyId: 'PAC',
-    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PAC.pdf'
-  },
-  {
     documentId: 'pusc-2026',
     partyName: 'Partido Unidad Social Cristiana',
     partyId: 'PUSC',
     url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PUSC.pdf'
   },
   {
-    documentId: 'prsc-2026',
-    partyName: 'Partido Restauración Social Cristiana',
-    partyId: 'PRSC',
-    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PRSC.pdf'
+    documentId: 'fa-2026',
+    partyName: 'Partido Frente Amplio',
+    partyId: 'FA',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/FA.pdf'
   },
   {
-    documentId: 'pfa-2026',
-    partyName: 'Partido Frente Amplio',
-    partyId: 'PFA',
-    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PFA.pdf'
+    documentId: 'plp-2026',
+    partyName: 'Partido Liberación Progresista',
+    partyId: 'PLP',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PLP.pdf'
   },
-  // Add more parties as they become available
+  {
+    documentId: 'png-2026',
+    partyName: 'Partido Nueva Generación',
+    partyId: 'PNG',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PNG.pdf'
+  },
+  {
+    documentId: 'acrm-2026',
+    partyName: 'Alianza por Costa Rica Mía',
+    partyId: 'ACRM',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/ACRM.pdf'
+  },
+  {
+    documentId: 'pa-2026',
+    partyName: 'Partido Alianza',
+    partyId: 'PA',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PA.pdf'
+  },
+  {
+    documentId: 'cds-2026',
+    partyName: 'Coalición Democrática Social',
+    partyId: 'CDS',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/CDS.pdf'
+  },
+  {
+    documentId: 'cac-2026',
+    partyName: 'Coalición Acción Ciudadana',
+    partyId: 'CAC',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/CAC.pdf'
+  },
+  {
+    documentId: 'pdlct-2026',
+    partyName: 'Partido Demócrata Liberal Costarricense',
+    partyId: 'PDLCT',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PDLCT.pdf'
+  },
+  {
+    documentId: 'pen-2026',
+    partyName: 'Partido Encuentro Nacional',
+    partyId: 'PEN',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PEN.pdf'
+  },
+  {
+    documentId: 'pel-2026',
+    partyName: 'Partido Ecológico',
+    partyId: 'PEL',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PEL.pdf'
+  },
+  {
+    documentId: 'pin-2026',
+    partyName: 'Partido Integración Nacional',
+    partyId: 'PIN',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PIN.pdf'
+  },
+  {
+    documentId: 'pjsc-2026',
+    partyName: 'Partido Justicia Social Costarricense',
+    partyId: 'PJSC',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PJSC.pdf'
+  },
+  {
+    documentId: 'pnr-2026',
+    partyName: 'Partido Nueva República',
+    partyId: 'PNR',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PNR.pdf'
+  },
+  {
+    documentId: 'psd-2026',
+    partyName: 'Partido Social Demócrata',
+    partyId: 'PSD',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PSD.pdf'
+  },
+  {
+    documentId: 'ppso-2026',
+    partyName: 'Partido Progreso Social',
+    partyId: 'PPSO',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PPSO.pdf'
+  },
+  {
+    documentId: 'up-2026',
+    partyName: 'Unión Patriótica',
+    partyId: 'UP',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/UP.pdf'
+  },
+  {
+    documentId: 'pucd-2026',
+    partyName: 'Partido Unión Costarricense Demócrata',
+    partyId: 'PUCD',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/PUCD.pdf'
+  },
+  {
+    documentId: 'cr1-2026',
+    partyName: 'Coalición CR1',
+    partyId: 'CR1',
+    url: 'https://www.tse.go.cr/2026/docus/planesgobierno/CR1.pdf'
+  },
 ];
 
 async function main() {

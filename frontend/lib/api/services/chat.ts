@@ -9,9 +9,34 @@ import type { ChatRequest, ChatResponse } from '../types';
 export const chatService = {
   /**
    * Send a chat message and get response
+   * Maps frontend 'query' to backend 'question' field
    */
   ask: async (request: ChatRequest): Promise<ChatResponse> => {
-    return api.post<ChatResponse>('/api/chat', request);
+    // Backend expects 'question' but frontend uses 'query'
+    const backendRequest: any = {
+      question: request.query,
+    };
+    
+    // Add optional filters
+    if (request.filters?.party?.[0]) {
+      backendRequest.party = request.filters.party[0]; // Backend expects single party string, not array
+    }
+    
+    const response = await api.post<any>('/api/chat', backendRequest);
+    
+    // Map backend response to frontend ChatResponse format
+    return {
+      answer: response.answer,
+      sources: response.sources?.map((source: any) => ({
+        documentId: source.id || '',
+        party: source.party || '',
+        excerpt: source.content || '',
+        score: source.relevanceScore || 0,
+        chunkId: source.id,
+      })) || [],
+      conversationId: request.conversationId || '', // Backend doesn't return this yet
+      confidence: 0, // Not provided by backend
+    };
   },
 
   /**
@@ -25,24 +50,36 @@ export const chatService = {
     onError: (error: Error) => void
   ): Promise<() => void> => {
     const controller = new AbortController();
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+    // Get access token
+    const accessToken = typeof window !== 'undefined' 
+      ? localStorage.getItem('accessToken')
+      : null;
+
+    // Map frontend request to backend format
+    const backendRequest: any = {
+      question: request.query,
+    };
+    
+    if (request.filters?.party?.[0]) {
+      backendRequest.party = request.filters.party[0];
+    }
 
     try {
       const response = await fetch(`${apiUrl}/api/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Add auth header if token exists
-          ...(typeof window !== 'undefined' && localStorage.getItem('accessToken')
-            ? { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-            : {}),
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify(backendRequest),
         signal: controller.signal,
       });
 
       if (!response.ok) {
-        throw new Error(`Stream failed: ${response.statusText}`);
+        const errorText = await response.text().catch(() => response.statusText);
+        throw new Error(`Stream failed: ${response.status} ${errorText}`);
       }
 
       if (!response.body) {
@@ -53,6 +90,8 @@ export const chatService = {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let accumulatedContent = '';
+      let sources: any[] = [];
 
       // Process stream chunks
       (async () => {
@@ -70,18 +109,37 @@ export const chatService = {
 
             for (const line of lines) {
               if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') {
-                  // Stream complete
+                const data = line.slice(6).trim();
+                if (!data || data === '[DONE]') {
                   continue;
                 }
                 try {
                   const parsed = JSON.parse(data);
-                  if (parsed.chunk) {
-                    onChunk(parsed.chunk);
-                  }
-                  if (parsed.complete) {
-                    onComplete(parsed);
+                  
+                  // Handle different event types from backend
+                  if (parsed.type === 'chunk' && parsed.content) {
+                    accumulatedContent += parsed.content;
+                    onChunk(parsed.content);
+                  } else if (parsed.type === 'sources') {
+                    // Store sources when received (backend sends sources without content field)
+                    sources = parsed.sources || [];
+                  } else if (parsed.type === 'done') {
+                    // Map backend response to frontend format
+                    const chatResponse: ChatResponse = {
+                      answer: accumulatedContent,
+                      sources: sources.map((source: any) => ({
+                        documentId: source.id || '',
+                        party: source.party || '',
+                        excerpt: '', // Backend doesn't send content in sources event
+                        score: source.relevanceScore || 0,
+                        chunkId: source.id,
+                      })),
+                      conversationId: request.conversationId || '',
+                      confidence: 0,
+                    };
+                    onComplete(chatResponse);
+                  } else if (parsed.type === 'error') {
+                    onError(new Error(parsed.message || 'Stream error'));
                   }
                 } catch (e) {
                   console.error('Parse error:', e);
@@ -114,7 +172,8 @@ export const chatService = {
    * @deprecated Use streamChat instead for better control
    */
   stream: async (request: ChatRequest): Promise<ReadableStream> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/stream`, {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const response = await fetch(`${apiUrl}/api/chat/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

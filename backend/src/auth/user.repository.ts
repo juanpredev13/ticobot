@@ -1,8 +1,11 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // Query limit constants
-const DEFAULT_QUERY_LIMIT_FREE = 10;
-const DEFAULT_QUERY_LIMIT_PREMIUM = 100;
+// In development, use much higher limits for easier testing
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+const DEFAULT_QUERY_LIMIT_FREE = isDevelopment ? 9999 : 10;
+const DEFAULT_QUERY_LIMIT_PREMIUM = isDevelopment ? 9999 : 100;
 const DEFAULT_QUERY_LIMIT_ADMIN = 999999;
 
 export interface User {
@@ -294,5 +297,20 @@ export class UserRepository {
     }
 
     return counts;
+  }
+
+  /**
+   * Reset query count for a user (development/testing only)
+   */
+  async resetQueryCount(userId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('users')
+      .update({
+        query_count_today: 0,
+        last_query_date: null,
+      })
+      .eq('id', userId);
+
+    if (error) throw error;
   }
 }
