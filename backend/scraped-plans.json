@@ -1,0 +1,122 @@
+[
+  {
+    "partyName": "CR1",
+    "partyId": "UNKNOWN",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/CR1.pdf",
+    "documentId": "unknown-2026"
+  },
+  {
+    "partyName": "ACRM",
+    "partyId": "ACRM",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/ACRM.pdf",
+    "documentId": "acrm-2026"
+  },
+  {
+    "partyName": "PA",
+    "partyId": "PA",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PA.pdf",
+    "documentId": "pa-2026"
+  },
+  {
+    "partyName": "CDS",
+    "partyId": "CDS",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/CDS.pdf",
+    "documentId": "cds-2026"
+  },
+  {
+    "partyName": "CAC",
+    "partyId": "CAC",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/CAC.pdf",
+    "documentId": "cac-2026"
+  },
+  {
+    "partyName": "PDLCT",
+    "partyId": "PDLCT",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PDLCT.pdf",
+    "documentId": "pdlct-2026"
+  },
+  {
+    "partyName": "PEN",
+    "partyId": "PEN",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PEN.pdf",
+    "documentId": "pen-2026"
+  },
+  {
+    "partyName": "PEL",
+    "partyId": "PEL",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PEL.pdf",
+    "documentId": "pel-2026"
+  },
+  {
+    "partyName": "FA",
+    "partyId": "FA",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/FA.pdf",
+    "documentId": "fa-2026"
+  },
+  {
+    "partyName": "PIN",
+    "partyId": "PIN",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PIN.pdf",
+    "documentId": "pin-2026"
+  },
+  {
+    "partyName": "PJSC",
+    "partyId": "PJSC",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PJSC.pdf",
+    "documentId": "pjsc-2026"
+  },
+  {
+    "partyName": "PLN",
+    "partyId": "PLN",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PLN.pdf",
+    "documentId": "pln-2026"
+  },
+  {
+    "partyName": "PLP",
+    "partyId": "PLP",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PLP.pdf",
+    "documentId": "plp-2026"
+  },
+  {
+    "partyName": "PNG",
+    "partyId": "PNG",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PNG.pdf",
+    "documentId": "png-2026"
+  },
+  {
+    "partyName": "PNR",
+    "partyId": "PNR",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PNR.pdf",
+    "documentId": "pnr-2026"
+  },
+  {
+    "partyName": "PSD",
+    "partyId": "PSD",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PSD.pdf",
+    "documentId": "psd-2026"
+  },
+  {
+    "partyName": "PPSO",
+    "partyId": "PPSO",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PPSO.pdf",
+    "documentId": "ppso-2026"
+  },
+  {
+    "partyName": "PUSC",
+    "partyId": "PUSC",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PUSC.pdf",
+    "documentId": "pusc-2026"
+  },
+  {
+    "partyName": "UP",
+    "partyId": "UP",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/UP.pdf",
+    "documentId": "up-2026"
+  },
+  {
+    "partyName": "PUCD",
+    "partyId": "PUCD",
+    "pdfUrl": "https://www.tse.go.cr/2026/docus/planesgobierno/PUCD.pdf",
+    "documentId": "pucd-2026"
+  }
+]
