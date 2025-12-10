@@ -54,7 +54,7 @@ export default function RootLayout({
       <body className={`${unbounded.variable} ${geist.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >

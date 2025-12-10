@@ -5,7 +5,7 @@
 
 // API Configuration from environment variables
 export const API_CONFIG = {
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '30000', 10),
 } as const;
 
@@ -66,11 +66,17 @@ export async function apiClient<T>(
 
   while (attempts <= retry) {
     try {
+      // Get access token from localStorage if available
+      const accessToken = typeof window !== 'undefined' 
+        ? localStorage.getItem('accessToken')
+        : null;
+
       const response = await fetch(url, {
         ...fetchConfig,
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           ...fetchConfig.headers,
         },
       });

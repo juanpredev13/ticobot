@@ -558,4 +558,49 @@ router.get('/me', requireAuth, async (req: Request, res: Response, next: NextFun
   }
 });
 
+/**
+ * @swagger
+ * /api/auth/reset-query-count:
+ *   post:
+ *     summary: Reset query count for current user (development only)
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Query count reset successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Only available in development
+ */
+router.post('/reset-query-count', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Only allow in development
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({
+        error: 'This endpoint is only available in development',
+      });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'User not found',
+      });
+    }
+
+    await userRepo.resetQueryCount(req.user.userId);
+
+    logger.info(`Query count reset for user ${req.user.userId}`);
+
+    res.json({
+      message: 'Query count reset successfully',
+      userId: req.user.userId,
+    });
+  } catch (error) {
+    logger.error('Reset query count error:', error);
+    next(error);
+  }
+});
+
 export default router;

@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { Logger } from '@ticobot/shared';
 import { RAGPipeline } from '../../rag/components/RAGPipeline.js';
-import { requireAuth, checkRateLimit } from '../middleware/auth.middleware.js';
+import { optionalAuth, checkRateLimit } from '../middleware/auth.middleware.js';
 
 const router = Router();
 const logger = new Logger('ChatAPI');
@@ -142,7 +142,7 @@ const chatSchema = z.object({
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/', requireAuth, checkRateLimit, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Validate request body
         const params = chatSchema.parse(req.body);
@@ -245,7 +245,7 @@ router.post('/', requireAuth, checkRateLimit, async (req: Request, res: Response
  *       400:
  *         description: Validation error
  */
-router.post('/stream', requireAuth, checkRateLimit, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/stream', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Validate request body
         const params = chatSchema.parse(req.body);
