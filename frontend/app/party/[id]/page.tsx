@@ -204,12 +204,31 @@ export default function PartyPage({ params }: { params: Promise<{ id: string }> 
                         href={`/candidate/${candidate.slug}`}
                         className="group flex items-center gap-4 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
                       >
-                        <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-muted">
-                          <span className="text-2xl font-bold text-muted-foreground">
-                            {candidate.name.split(" ")[0].charAt(0)}
-                            {candidate.name.split(" ")[1]?.charAt(0)}
-                          </span>
-                        </div>
+                        {candidate.photo_url ? (
+                          <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
+                            <img
+                              src={candidate.photo_url}
+                              alt={candidate.name}
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                // Fallback to initials if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = `<span class="text-2xl font-bold text-muted-foreground">${candidate.name.split(" ")[0].charAt(0)}${candidate.name.split(" ")[1]?.charAt(0) || ''}</span>`;
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-muted">
+                            <span className="text-2xl font-bold text-muted-foreground">
+                              {candidate.name.split(" ")[0].charAt(0)}
+                              {candidate.name.split(" ")[1]?.charAt(0)}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex-1">
                           <h3 className="font-semibold group-hover:text-primary">{candidate.name}</h3>
                           <p className="text-sm text-muted-foreground">{candidate.position}</p>

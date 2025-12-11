@@ -8,36 +8,8 @@ import { Search, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { useDocuments, useHealth, useParties } from "@/lib/hooks"
+import { useDocuments, useHealth, useParties, useCandidates } from "@/lib/hooks"
 import { PageErrorBoundary } from "@/components/page-error-boundary"
-
-// Static data for candidates (since API doesn't have candidates endpoint yet)
-const CANDIDATES = [
-  {
-    name: "José María Figueres Olsen",
-    party: "Partido Liberación Nacional",
-    position: "Candidato a Presidente",
-    id: "jose-maria-figueres",
-  },
-  {
-    name: "Fabricio Alvarado Muñoz",
-    party: "Nueva República",
-    position: "Candidato a Presidente",
-    id: "fabricio-alvarado",
-  },
-  {
-    name: "Carlos Alvarado Quesada",
-    party: "Partido Acción Ciudadana",
-    position: "Candidato a Presidente",
-    id: "carlos-alvarado",
-  },
-  {
-    name: "Rodrigo Chaves Robles",
-    party: "Partido Progreso Social Democrático",
-    position: "Candidato a Presidente",
-    id: "rodrigo-chaves",
-  },
-]
 
 function HomeContent() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -47,9 +19,14 @@ function HomeContent() {
   const { data: documentsData, isLoading: documentsLoading } = useDocuments()
   const { data: healthData, isLoading: healthLoading } = useHealth()
   const { data: partiesData, isLoading: partiesLoading } = useParties()
+  const { data: candidatesData, isLoading: candidatesLoading } = useCandidates({
+    limit: 50,
+    position: 'Candidato a Presidente'
+  })
 
   // Get parties from API or use empty array
   const parties = partiesData?.parties || []
+  const candidates = candidatesData?.candidates || []
 
   // Calculate stats from real data
   const stats = {
@@ -210,25 +187,71 @@ function HomeContent() {
           <p className="text-muted-foreground">Conoce a los candidatos y sus propuestas</p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {CANDIDATES.map((candidate) => (
-            <Link
-              key={candidate.id}
-              href={`/candidate/${candidate.id}`}
-              className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
-            >
-              <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
-                <span className="text-xl font-bold text-muted-foreground">
-                  {candidate.name.split(" ")[0].charAt(0)}
-                  {candidate.name.split(" ")[2]?.charAt(0) || candidate.name.split(" ")[1].charAt(0)}
-                </span>
+        {candidatesLoading ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="rounded-lg border border-border bg-card p-6"
+              >
+                <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                </div>
+                <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
+                <div className="mb-2 h-4 w-1/2 rounded bg-muted" />
+                <div className="h-4 w-2/3 rounded bg-muted" />
               </div>
-              <h3 className="mb-1 font-semibold group-hover:text-primary">{candidate.name}</h3>
-              <p className="mb-2 text-sm font-medium text-primary">{candidate.party}</p>
-              <p className="text-sm text-muted-foreground">{candidate.position}</p>
-            </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {candidates.map((candidate) => {
+              // Get party info for this candidate
+              const candidateParty = parties.find(p => p.id === candidate.party_id)
+              const partyName = candidateParty?.name || 'Sin partido'
+              const partySlug = candidateParty?.slug || ''
+              
+              return (
+                <Link
+                  key={candidate.id}
+                  href={`/candidate/${candidate.slug}`}
+                  className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
+                >
+                  {candidate.photo_url ? (
+                    <div className="relative mb-4 flex size-16 items-center justify-center overflow-hidden rounded-full bg-muted">
+                      <img
+                        src={candidate.photo_url}
+                        alt={candidate.name}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          // Fallback to initials if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = `<span class="text-xl font-bold text-muted-foreground">${candidate.name.split(" ")[0].charAt(0)}${candidate.name.split(" ")[1]?.charAt(0) || ''}</span>`;
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
+                      <span className="text-xl font-bold text-muted-foreground">
+                        {candidate.name.split(" ")[0].charAt(0)}
+                        {candidate.name.split(" ")[1]?.charAt(0) || ''}
+                      </span>
+                    </div>
+                  )}
+                  <h3 className="mb-1 font-semibold group-hover:text-primary">{candidate.name}</h3>
+                  {candidateParty && (
+                    <p className="mb-2 text-sm font-medium text-primary">{candidateParty.abbreviation || partyName}</p>
+                  )}
+                  <p className="text-sm text-muted-foreground">{candidate.position}</p>
+                </Link>
+              )
+            })}
+          </div>
+        )}
       </section>
 
       {/* Features Section */}

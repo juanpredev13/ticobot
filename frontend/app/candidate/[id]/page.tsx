@@ -105,12 +105,31 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
         {/* Candidate Header */}
         <div className="mb-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-start">
-            <div className="flex size-32 shrink-0 items-center justify-center rounded-2xl bg-muted">
-              <span className="text-5xl font-bold text-muted-foreground">
-                {candidate.name.split(" ")[0].charAt(0)}
-                {candidate.name.split(" ")[1]?.charAt(0)}
-              </span>
-            </div>
+            {candidate.photo_url ? (
+              <div className="relative flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-muted">
+                <img
+                  src={candidate.photo_url}
+                  alt={candidate.name}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    // Fallback to initials if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      parent.innerHTML = `<span class="text-5xl font-bold text-muted-foreground">${candidate.name.split(" ")[0].charAt(0)}${candidate.name.split(" ")[1]?.charAt(0) || ''}</span>`;
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="flex size-32 shrink-0 items-center justify-center rounded-2xl bg-muted">
+                <span className="text-5xl font-bold text-muted-foreground">
+                  {candidate.name.split(" ")[0].charAt(0)}
+                  {candidate.name.split(" ")[1]?.charAt(0)}
+                </span>
+              </div>
+            )}
             <div className="flex-1">
               {party && (
                 <div className="mb-2">
