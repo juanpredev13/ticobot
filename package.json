@@ -18,8 +18,9 @@
   ],
   "author": "juanpredev",
   "license": "MIT",
+  "packageManager": "pnpm@10.22.0",
   "engines": {
     "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
+    "pnpm": ">=10.0.0"
   }
 }
