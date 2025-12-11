@@ -19,7 +19,7 @@ const chatSchema = z.object({
     topK: z.coerce.number().min(1).max(10).default(5),
     temperature: z.coerce.number().min(0).max(2).default(0.7),
     maxTokens: z.coerce.number().min(100).max(2000).default(800),
-    minRelevanceScore: z.coerce.number().min(0).max(1).default(0.35),
+    minRelevanceScore: z.coerce.number().min(0).max(1).default(0.1),
     conversationHistory: z.array(z.object({
         role: z.enum(['user', 'assistant']),
         content: z.string()
@@ -171,7 +171,7 @@ router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFun
                       (source.pageRange ?
                         `${source.pageRange.start}-${source.pageRange.end}` :
                         null),
-                relevanceScore: source.relevanceScore
+                relevanceScore: source.relevance || 0
             })),
             metadata: {
                 model: result.metadata.model,
@@ -275,13 +275,14 @@ router.post('/stream', optionalAuth, async (req: Request, res: Response, next: N
                 type: 'sources',
                 sources: result.sources.map(source => ({
                     id: source.id,
+                    content: source.content,
                     party: source.party,
                     document: source.document,
                     page: source.pageNumber ||
                           (source.pageRange ?
                             `${source.pageRange.start}-${source.pageRange.end}` :
                             null),
-                    relevanceScore: source.relevanceScore
+                    relevanceScore: source.relevance || 0
                 }))
             })}\n\n`);
 

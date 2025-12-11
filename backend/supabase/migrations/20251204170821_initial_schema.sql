@@ -4,7 +4,11 @@
 -- ============================================
 
 -- Step 1: Enable pgvector extension
-CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
+-- Note: In Supabase Cloud, enable this from Dashboard → Database → Extensions first
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Ensure extensions schema is in search path
+SET search_path TO public, extensions;
 
 -- Step 2: Create documents table
 CREATE TABLE IF NOT EXISTS documents (

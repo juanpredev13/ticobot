@@ -10,6 +10,14 @@ export class SupabaseVectorStore implements IVectorStore {
   private client: SupabaseClient;
   private tableName: string;
 
+  /**
+   * Convert embedding array to pgvector format string
+   * pgvector expects format: '[0.1,0.2,0.3]' (no spaces)
+   */
+  private embeddingToVector(embedding: number[]): string {
+    return `[${embedding.join(',')}]`;
+  }
+
   constructor(env: Env) {
     if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error(
@@ -89,8 +97,8 @@ export class SupabaseVectorStore implements IVectorStore {
           chunk_index: doc.metadata?.chunkIndex || 0,
           content: doc.content,
           clean_content: doc.metadata?.cleanContent || doc.content,
-          // Keep embedding as array - Supabase client handles the conversion
-          embedding: doc.embedding,
+          // Convert embedding array to pgvector format string
+          embedding: this.embeddingToVector(doc.embedding),
           token_count: doc.metadata?.tokens || null,
           char_count: doc.content?.length || 0,
           metadata: doc.metadata,
@@ -131,9 +139,9 @@ export class SupabaseVectorStore implements IVectorStore {
       // Support both party_id (snake_case) and partyId (camelCase)
       const partyId = filters?.party_id || filters?.partyId || null;
 
-      // Keep embedding as array - Supabase client handles the conversion
+      // Convert query embedding array to pgvector format string
       const { data, error } = await this.client.rpc('match_chunks', {
-        query_embedding: queryEmbedding,
+        query_embedding: this.embeddingToVector(queryEmbedding),
         match_count: k,
         filter_party_id: partyId,
       });
@@ -146,15 +154,55 @@ export class SupabaseVectorStore implements IVectorStore {
         return [];
       }
 
-      return data.map((row: any) => ({
-        document: {
-          id: row.id,
-          content: row.content,
-          embedding: row.embedding,
-          metadata: row.metadata,
-        },
-        score: row.similarity,
-      }));
+      // Get unique document IDs to fetch party information
+      const documentIds = [...new Set(data.map((row: any) => row.document_id))];
+      
+      // Fetch party information for all documents
+      const { data: documentsData, error: documentsError } = await this.client
+        .from('documents')
+        .select('id, party_id, party_name, title, document_id')
+        .in('id', documentIds);
+
+      if (documentsError) {
+        console.warn('Failed to fetch document metadata:', documentsError);
+      }
+
+      // Create a map of document_id -> party info
+      const documentMap = new Map();
+      if (documentsData) {
+        documentsData.forEach((doc: any) => {
+          documentMap.set(doc.id, {
+            partyId: doc.party_id,
+            partyName: doc.party_name,
+            title: doc.title,
+            documentId: doc.document_id,
+          });
+        });
+      }
+
+      return data.map((row: any) => {
+        const docInfo = documentMap.get(row.document_id) || {};
+        
+        // Merge document metadata with party information
+        const enrichedMetadata = {
+          ...row.metadata,
+          partyId: docInfo.partyId || row.metadata?.partyId,
+          party: docInfo.partyId || row.metadata?.party || row.metadata?.partyId,
+          partyName: docInfo.partyName || row.metadata?.partyName,
+          title: docInfo.title || row.metadata?.title,
+          documentId: docInfo.documentId || row.metadata?.documentId,
+        };
+
+        return {
+          document: {
+            id: row.id,
+            content: row.content,
+            embedding: row.embedding,
+            metadata: enrichedMetadata,
+          },
+          score: row.similarity,
+        };
+      });
     } catch (error) {
       throw new Error(
         `Supabase similarity search failed: ${error instanceof Error ? error.message : String(error)}`

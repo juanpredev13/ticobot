@@ -4,6 +4,7 @@
 
 import { ProviderFactory } from './factory/ProviderFactory.js';
 import { env } from './config/env.js';
+import { startServer } from './api/server.js';
 
 async function main() {
   console.log('🚀 TicoBot Backend Starting...');
@@ -16,9 +17,12 @@ async function main() {
   try {
     // Test provider initialization
     console.log('\n✅ Provider abstraction layer ready!');
-    console.log('   Run your application logic here...');
+
+    // Start API server
+    const port = parseInt(env.PORT as string) || 3001;
+    startServer(port);
   } catch (error) {
-    console.error('❌ Failed to initialize providers:', error);
+    console.error('❌ Failed to initialize:', error);
     process.exit(1);
   }
 }

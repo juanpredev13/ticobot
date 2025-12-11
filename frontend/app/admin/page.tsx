@@ -25,6 +25,7 @@ import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { SiteHeader } from "@/components/site-header" // Import global SiteHeader
+import { DatabaseStatus } from "@/components/database-status"
 
 type SystemStatus = "healthy" | "warning" | "critical"
 type IngestionStatus = "processing" | "completed" | "failed"
@@ -240,6 +241,12 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+
+        {/* Database Status - Real Data */}
+        <div className="mb-8">
+          <h2 className="mb-4 text-xl font-semibold">Estado de la Base de Datos</h2>
+          <DatabaseStatus />
+        </div>
 
         {/* System Health Metrics */}
         <div className="mb-8">

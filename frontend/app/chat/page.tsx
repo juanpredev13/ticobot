@@ -58,7 +58,7 @@ function ChatContent() {
   // React Query hooks
   const { data: user, isLoading: userLoading } = useUser()
   const chatMutation = useChat()
-  const { startStream, stopStream, isStreaming, streamedContent, reset: resetStream } = useChatStream()
+  const { startStream, stopStream, isStreaming, streamedContent, sources: streamSources, reset: resetStream } = useChatStream()
 
   const isAuthenticated = !!user
   const isLoading = chatMutation.isPending || isStreaming
@@ -154,12 +154,24 @@ function ChatContent() {
             // Update conversation ID
             setConversationId(data.conversationId)
 
+            // Map sources to Message format
+            const mappedSources = data.sources?.map(source => ({
+              title: source.document || source.documentId || 'Documento',
+              content: source.excerpt || '',
+              score: source.score || 0,
+              metadata: {
+                party: source.party || '',
+                page: source.page ? (typeof source.page === 'number' ? source.page : parseInt(source.page)) : undefined,
+                document: source.document || source.documentId || '',
+              }
+            })) || []
+
             // Add assistant message
             const assistantMessage: Message = {
               id: (Date.now() + 1).toString(),
               role: "assistant",
               content: data.answer,
-              sources: data.sources,
+              sources: mappedSources,
               timestamp: new Date(),
             }
             setMessages((prev) => [...prev, assistantMessage])
@@ -169,7 +181,7 @@ function ChatContent() {
     }
   }
 
-  // Update streaming content in real-time
+  // Update streaming content and sources in real-time
   useEffect(() => {
     if (streamedContent && isStreaming) {
       setMessages((prev) => {
@@ -182,6 +194,30 @@ function ChatContent() {
       })
     }
   }, [streamedContent, isStreaming])
+
+  // Update sources when stream completes
+  useEffect(() => {
+    if (!isStreaming && streamSources && streamSources.length > 0) {
+      setMessages((prev) => {
+        const updated = [...prev]
+        const lastMessage = updated[updated.length - 1]
+        if (lastMessage && lastMessage.role === "assistant") {
+          // Map sources to Message format
+          lastMessage.sources = streamSources.map(source => ({
+            title: source.document || source.documentId || 'Documento',
+            content: source.excerpt || '',
+            score: source.score || 0,
+            metadata: {
+              party: source.party || '',
+              page: source.page ? (typeof source.page === 'number' ? source.page : parseInt(source.page)) : undefined,
+              document: source.document || source.documentId || '',
+            }
+          }))
+        }
+        return updated
+      })
+    }
+  }, [isStreaming, streamSources])
 
   const handleSuggestedQuestion = (question: string) => {
     setInputValue(question)
