@@ -106,6 +106,8 @@ export class RAGPipeline {
                 party: result.document.metadata?.partyId || result.document.metadata?.party || 'Unknown',
                 document: result.document.metadata?.title || result.document.metadata?.documentId || 'Unknown',
                 relevance: result.score,
+                pageNumber: result.document.metadata?.pageNumber,
+                pageRange: result.document.metadata?.pageRange,
             }));
 
             const queryTime = Date.now() - startTime;

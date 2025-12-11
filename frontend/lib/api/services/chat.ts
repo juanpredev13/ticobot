@@ -33,6 +33,8 @@ export const chatService = {
         excerpt: source.content || '',
         score: source.relevanceScore || 0,
         chunkId: source.id,
+        document: source.document || '',
+        page: source.page || undefined,
       })) || [],
       conversationId: request.conversationId || '', // Backend doesn't return this yet
       confidence: 0, // Not provided by backend
@@ -121,7 +123,7 @@ export const chatService = {
                     accumulatedContent += parsed.content;
                     onChunk(parsed.content);
                   } else if (parsed.type === 'sources') {
-                    // Store sources when received (backend sends sources without content field)
+                    // Store sources when received (backend now sends content field)
                     sources = parsed.sources || [];
                   } else if (parsed.type === 'done') {
                     // Map backend response to frontend format
@@ -130,9 +132,12 @@ export const chatService = {
                       sources: sources.map((source: any) => ({
                         documentId: source.id || '',
                         party: source.party || '',
-                        excerpt: '', // Backend doesn't send content in sources event
+                        excerpt: source.content || '',
                         score: source.relevanceScore || 0,
                         chunkId: source.id,
+                        // Store additional metadata for mapping
+                        document: source.document || '',
+                        page: source.page || undefined,
                       })),
                       conversationId: request.conversationId || '',
                       confidence: 0,

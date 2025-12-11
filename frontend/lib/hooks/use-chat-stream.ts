@@ -13,6 +13,7 @@ interface UseChatStreamReturn {
   reset: () => void;
   isStreaming: boolean;
   streamedContent: string;
+  sources: ChatResponse['sources'] | null;
   error: Error | null;
 }
 
@@ -31,6 +32,7 @@ interface UseChatStreamReturn {
 export function useChatStream(): UseChatStreamReturn {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedContent, setStreamedContent] = useState('');
+  const [sources, setSources] = useState<ChatResponse['sources'] | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const cancelRef = useRef<(() => void) | null>(null);
 
@@ -49,6 +51,7 @@ export function useChatStream(): UseChatStreamReturn {
         // onComplete - streaming finished successfully
         (response: ChatResponse) => {
           setIsStreaming(false);
+          setSources(response.sources || null);
           // Could store response metadata here if needed
           console.log('Stream completed:', response);
         },
@@ -76,6 +79,7 @@ export function useChatStream(): UseChatStreamReturn {
 
   const reset = useCallback(() => {
     setStreamedContent('');
+    setSources(null);
     setError(null);
   }, []);
 
@@ -85,6 +89,7 @@ export function useChatStream(): UseChatStreamReturn {
     reset,
     isStreaming,
     streamedContent,
+    sources,
     error,
   };
 }

@@ -68,6 +68,8 @@ export interface Source {
   excerpt: string;
   score: number;
   chunkId?: string;
+  document?: string;
+  page?: string | number;
 }
 
 export interface SearchResponse {
