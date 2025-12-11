@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "dev:server": "tsx watch src/api/server.ts",
+    "start": "node dist/api/server.js",
     "start:server": "tsx src/api/server.ts",
     "test:ingestion": "tsx src/scripts/testIngestion.ts",
     "admin:create": "tsx scripts/create-admin.ts",
