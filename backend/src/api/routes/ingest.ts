@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { IngestPipeline, IngestOptions } from '../../ingest/components/IngestPipeline';
+import { IngestPipeline, IngestOptions } from '../../ingest/components/IngestPipeline.js';
 import { Logger } from '@ticobot/shared';
 import { requireAuth, requireAdmin } from '../middleware/auth.middleware.js';
 
