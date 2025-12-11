@@ -169,39 +169,7 @@ export default function LoginPage() {
           )}
         </Button>
 
-        {/* Divider */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              O continuar con
-            </span>
-          </div>
-        </div>
-
-        {/* Social Auth Buttons (Future) */}
-        <div className="grid grid-cols-2 gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            disabled
-            className="w-full opacity-50 cursor-not-allowed"
-          >
-            Google
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled
-            className="w-full opacity-50 cursor-not-allowed"
-          >
-            GitHub
-          </Button>
-        </div>
-
-        <p className="text-xs text-center text-muted-foreground mt-4">
+        <p className="text-xs text-center text-muted-foreground mt-6">
           Al iniciar sesión, aceptas nuestros{" "}
           <Link href="/terms" className="hover:text-primary underline">
             Términos de Servicio

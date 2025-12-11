@@ -53,8 +53,8 @@ export default function SignupPage() {
     // Password validation
     if (!password) {
       newErrors.password = "La contraseña es requerida"
-    } else if (password.length < 12) {
-      newErrors.password = "La contraseña debe tener al menos 12 caracteres"
+    } else if (password.length < 8) {
+      newErrors.password = "La contraseña debe tener al menos 8 caracteres"
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])/.test(password)) {
       newErrors.password =
         "La contraseña debe contener mayúsculas, minúsculas y números"
@@ -151,7 +151,7 @@ export default function SignupPage() {
             <p className="text-sm text-red-500">{errors.password}</p>
           )}
           <p className="text-xs text-muted-foreground">
-            Mínimo 12 caracteres con mayúsculas, minúsculas y números
+            Mínimo 8 caracteres con mayúsculas, minúsculas y números
           </p>
         </div>
 
@@ -227,39 +227,7 @@ export default function SignupPage() {
           )}
         </Button>
 
-        {/* Divider */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              O regístrate con
-            </span>
-          </div>
-        </div>
-
-        {/* Social Auth Buttons (Future) */}
-        <div className="grid grid-cols-2 gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            disabled
-            className="w-full opacity-50 cursor-not-allowed"
-          >
-            Google
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled
-            className="w-full opacity-50 cursor-not-allowed"
-          >
-            GitHub
-          </Button>
-        </div>
-
-        <p className="text-xs text-center text-muted-foreground mt-4">
+        <p className="text-xs text-center text-muted-foreground mt-6">
           Al crear una cuenta, aceptas recibir actualizaciones sobre planes de
           gobierno y elecciones en Costa Rica
         </p>
