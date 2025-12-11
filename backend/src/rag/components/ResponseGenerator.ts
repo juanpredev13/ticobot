@@ -191,8 +191,8 @@ Guidelines:
 
         // Decrease confidence if response indicates uncertainty
         const uncertaintyPhrases = [
-            'no tengo suficiente información',
-            'no hay información',
+            'no tengo suficiente informaciÃ³n',
+            'no hay informaciÃ³n',
             'no puedo determinar',
             'I don\'t have enough information',
             'there is no information',
