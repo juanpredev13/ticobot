@@ -54,3 +54,19 @@ temp/
 
 # Downloads (PDF files from TSE)
 backend/downloads/
+
+# Development/temporary scripts and migrations
+backend/migrations/
+backend/src/scripts/*
+!backend/src/scripts/applyMigration.ts
+!backend/src/scripts/checkSupabaseTables.ts
+!backend/src/scripts/ingestAllPlans.ts
+!backend/src/scripts/reIngestAllPlans.ts
+!backend/src/scripts/README.md
+!backend/src/scripts/checkCloudEmbeddingType.ts
+!backend/src/scripts/checkColumnSchema.ts
+!backend/src/scripts/checkColumnType.ts
+!backend/src/scripts/checkTop5Chunks.ts
+!backend/src/scripts/debugVectorSearch.ts
+!backend/src/scripts/testMatchChunks.ts
+!backend/src/scripts/testRealQuery.ts
