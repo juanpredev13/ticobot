@@ -75,6 +75,6 @@ export class QueryEmbedder {
             // Normalize multiple spaces
             .replace(/\s+/g, ' ')
             // Remove leading/trailing punctuation that might affect embeddings
-            .replace(/^[.,;:!?¿¡\s]+|[.,;:!?¿¡\s]+$/g, '');
+            .replace(/^[.,;:!?Â¿Â¡\s]+|[.,;:!?Â¿Â¡\s]+$/g, '');
     }
 }
