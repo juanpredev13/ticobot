@@ -10,6 +10,8 @@ import ingestRoutes from './routes/ingest.js';
 import documentsRoutes from './routes/documents.js';
 import searchRoutes from './routes/search.js';
 import chatRoutes from './routes/chat.js';
+import partiesRoutes from './routes/parties.js';
+import candidatesRoutes from './routes/candidates.js';
 
 const logger = new Logger('Server');
 
@@ -45,6 +47,8 @@ export function createApp(): Express {
     app.use('/api/documents', documentsRoutes);
     app.use('/api/search', searchRoutes);
     app.use('/api/chat', chatRoutes);
+    app.use('/api/parties', partiesRoutes);
+    app.use('/api/candidates', candidatesRoutes);
 
     // Health check
     app.get('/health', (req: Request, res: Response) => {
@@ -87,6 +91,17 @@ export function createApp(): Express {
                 ingest: {
                     single: 'POST /api/ingest',
                     bulk: 'POST /api/ingest/bulk'
+                },
+                parties: {
+                    list: 'GET /api/parties',
+                    getById: 'GET /api/parties/:id',
+                    getBySlug: 'GET /api/parties/slug/:slug',
+                    getCandidates: 'GET /api/parties/:id/candidates'
+                },
+                candidates: {
+                    list: 'GET /api/candidates',
+                    getById: 'GET /api/candidates/:id',
+                    getBySlug: 'GET /api/candidates/slug/:slug'
                 }
             },
             documentation: '/api/docs'
@@ -126,6 +141,8 @@ export function startServer(port: number = 3000): void {
         logger.info(`   Search: http://localhost:${port}/api/search`);
         logger.info(`   Chat: http://localhost:${port}/api/chat`);
         logger.info(`   Ingest: http://localhost:${port}/api/ingest`);
+        logger.info(`   Parties: http://localhost:${port}/api/parties`);
+        logger.info(`   Candidates: http://localhost:${port}/api/candidates`);
     });
 }
 

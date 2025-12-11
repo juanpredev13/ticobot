@@ -52,6 +52,32 @@ export const chatKeys = {
 };
 
 /**
+ * Parties-related query keys
+ */
+export const partyKeys = {
+  all: ['parties'] as const,
+  lists: () => [...partyKeys.all, 'list'] as const,
+  list: (params?: { limit?: number; offset?: number }) => [...partyKeys.lists(), params] as const,
+  details: () => [...partyKeys.all, 'detail'] as const,
+  detail: (id: string) => [...partyKeys.details(), id] as const,
+  bySlug: (slug: string) => [...partyKeys.details(), 'slug', slug] as const,
+  candidates: (partyId: string) => [...partyKeys.detail(partyId), 'candidates'] as const,
+};
+
+/**
+ * Candidates-related query keys
+ */
+export const candidateKeys = {
+  all: ['candidates'] as const,
+  lists: () => [...candidateKeys.all, 'list'] as const,
+  list: (params?: { limit?: number; offset?: number; party_id?: string; position?: string }) => 
+    [...candidateKeys.lists(), params] as const,
+  details: () => [...candidateKeys.all, 'detail'] as const,
+  detail: (id: string) => [...candidateKeys.details(), id] as const,
+  bySlug: (slug: string) => [...candidateKeys.details(), 'slug', slug] as const,
+};
+
+/**
  * Health & Diagnostics query keys
  */
 export const healthKeys = {
@@ -69,4 +95,6 @@ export const queryKeys = {
   search: searchKeys,
   chat: chatKeys,
   health: healthKeys,
+  parties: partyKeys,
+  candidates: candidateKeys,
 };

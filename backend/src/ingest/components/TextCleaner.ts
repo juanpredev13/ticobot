@@ -58,12 +58,15 @@ export class TextCleaner {
             cleaned = this.fixEncodingIssues(cleaned);
         }
 
-        // 3. Remove or normalize special characters
+        // 3. Remove color codes (hexadecimal codes like #FFD700, #CC0000)
+        cleaned = this.removeColorCodes(cleaned);
+
+        // 4. Remove or normalize special characters
         if (removeSpecialChars) {
             cleaned = this.removeSpecialCharacters(cleaned, preservePunctuation);
         }
 
-        // 4. Normalize whitespace
+        // 5. Normalize whitespace
         if (normalizeWhitespace) {
             cleaned = this.normalizeWhitespace(cleaned);
         }
@@ -177,6 +180,25 @@ export class TextCleaner {
         });
 
         return fixed;
+    }
+
+    /**
+     * Remove hexadecimal color codes (e.g., #FFD700, #CC0000)
+     * Also removes comma-separated color lists
+     */
+    private removeColorCodes(text: string): string {
+        // Remove hex color codes (3 or 6 digits after #)
+        // Pattern: # followed by 3-6 hexadecimal characters
+        let cleaned = text.replace(/#[0-9A-Fa-f]{3,6}/g, '');
+        
+        // Clean up leftover commas and spaces that were part of color lists
+        // Remove patterns like ", " or ", " that might be left after removing colors
+        cleaned = cleaned.replace(/,\s*,/g, ','); // Multiple commas
+        cleaned = cleaned.replace(/^\s*,\s*/g, ''); // Leading comma
+        cleaned = cleaned.replace(/\s*,\s*$/g, ''); // Trailing comma
+        cleaned = cleaned.replace(/\s{2,}/g, ' '); // Multiple spaces
+        
+        return cleaned;
     }
 
     /**
