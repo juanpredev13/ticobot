@@ -1,23 +1,75 @@
+"use client"
+
+import { use } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, ExternalLink, Users, Calendar, MapPin, Award } from "lucide-react"
+import { ArrowLeft, ExternalLink, Users, Calendar, MapPin, Award, Loader2, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { getPartyById, getCandidatesByPartyId } from "@/lib/data/parties"
+import { Skeleton } from "@/components/ui/skeleton"
+import { usePartyBySlug, usePartyCandidates } from "@/lib/hooks"
 
-export default function PartyPage({ params }: { params: { id: string } }) {
-  const party = getPartyById(params.id)
-  const candidates = getCandidatesByPartyId(params.id)
+export default function PartyPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const { data: partyData, isLoading: partyLoading, isError: partyError } = usePartyBySlug(id)
+  const { data: candidatesData, isLoading: candidatesLoading } = usePartyCandidates(
+    partyData?.party.id || '',
+    !!partyData?.party.id
+  )
 
-  if (!party) {
-    notFound()
+  // Loading state
+  if (partyLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <Skeleton className="mb-6 h-10 w-32" />
+          <div className="mb-8">
+            <Skeleton className="mb-4 h-20 w-full" />
+            <Skeleton className="h-6 w-3/4" />
+          </div>
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="pt-6">
+                  <Skeleton className="h-16 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
+
+  // Error state
+  if (partyError || !partyData?.party) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <Card className="border-destructive">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <AlertCircle className="mb-4 size-12 text-destructive" />
+              <h3 className="mb-2 text-lg font-semibold">Error al cargar el partido</h3>
+              <p className="mb-4 text-sm text-muted-foreground">
+                No se pudo cargar la información del partido
+              </p>
+              <Button variant="outline" asChild>
+                <Link href="/">Volver a inicio</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  const party = partyData.party
+  const candidates = candidatesData?.candidates || []
+  const abbreviation = party.abbreviation || party.slug.toUpperCase()
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
         <Button variant="ghost" size="sm" asChild className="mb-6">
@@ -32,138 +84,146 @@ export default function PartyPage({ params }: { params: { id: string } }) {
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <div className="flex-1">
               <div className="mb-4 flex items-center gap-4">
-                <div className="flex size-20 items-center justify-center rounded-xl bg-muted">
-                  <span className="text-3xl font-bold text-muted-foreground">{party.abbr.charAt(0)}</span>
+                <div 
+                  className="flex size-20 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: party.colors.primary + '20' }}
+                >
+                  <span className="text-3xl font-bold" style={{ color: party.colors.primary }}>
+                    {abbreviation.charAt(0)}
+                  </span>
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold">{party.name}</h1>
-                  <p className="mt-1 text-lg text-muted-foreground">{party.abbr}</p>
+                  <p className="mt-1 text-lg text-muted-foreground">{abbreviation}</p>
                 </div>
               </div>
-              <p className="max-w-3xl text-pretty leading-relaxed text-muted-foreground">{party.description}</p>
+              {party.description && (
+                <p className="max-w-3xl text-pretty leading-relaxed text-muted-foreground">
+                  {party.description}
+                </p>
+              )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {party.ideology.map((ideology) => (
-                <Badge key={ideology} variant="secondary">
-                  {ideology}
-                </Badge>
-              ))}
-            </div>
+            {party.ideology && party.ideology.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {party.ideology.map((ideology) => (
+                  <Badge key={ideology} variant="secondary">
+                    {ideology}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
-                  <Calendar className="size-6 text-primary" />
+          {party.founded_year && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
+                    <Calendar className="size-6 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold">{party.founded_year}</div>
+                    <div className="text-sm text-muted-foreground">Año de fundación</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold">{party.founded}</div>
-                  <div className="text-sm text-muted-foreground">Año de fundación</div>
+              </CardContent>
+            </Card>
+          )}
+          {party.current_representation?.deputies !== undefined && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-12 items-center justify-center rounded-lg bg-teal-500/10">
+                    <Users className="size-6 text-teal-600" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold">{party.current_representation.deputies}</div>
+                    <div className="text-sm text-muted-foreground">Diputados actuales</div>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-lg bg-teal-500/10">
-                  <Users className="size-6 text-teal-600" />
+              </CardContent>
+            </Card>
+          )}
+          {party.current_representation?.mayors !== undefined && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-12 items-center justify-center rounded-lg bg-blue-500/10">
+                    <MapPin className="size-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold">{party.current_representation.mayors}</div>
+                    <div className="text-sm text-muted-foreground">Alcaldías</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold">{party.currentRepresentation.deputies}</div>
-                  <div className="text-sm text-muted-foreground">Diputados actuales</div>
+              </CardContent>
+            </Card>
+          )}
+          {party.founded_year && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-12 items-center justify-center rounded-lg bg-amber-500/10">
+                    <Award className="size-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold">
+                      {new Date().getFullYear() - party.founded_year}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Años de historia</div>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-lg bg-blue-500/10">
-                  <MapPin className="size-6 text-blue-600" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{party.currentRepresentation.mayors}</div>
-                  <div className="text-sm text-muted-foreground">Alcaldías</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-lg bg-amber-500/10">
-                  <Award className="size-6 text-amber-600" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{new Date().getFullYear() - party.founded}</div>
-                  <div className="text-sm text-muted-foreground">Años de historia</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="space-y-8 lg:col-span-2">
-            {/* History Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Historia del partido</CardTitle>
-                <CardDescription>Momentos clave en la trayectoria del {party.abbr}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {party.history.map((event, index) => (
-                    <div
-                      key={index}
-                      className="relative pl-8 before:absolute before:left-2 before:top-2 before:size-2 before:rounded-full before:bg-primary after:absolute after:left-[9px] after:top-4 after:h-[calc(100%+0.5rem)] after:w-px after:bg-border last:after:hidden"
-                    >
-                      <div className="mb-1 font-semibold text-primary">{event.year}</div>
-                      <p className="text-sm leading-relaxed text-muted-foreground">{event.event}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Candidates Section */}
             <Card>
               <CardHeader>
                 <CardTitle>Candidatos actuales</CardTitle>
-                <CardDescription>Representantes del {party.abbr} para las elecciones 2026</CardDescription>
+                <CardDescription>Representantes del {abbreviation} para las elecciones 2026</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {candidates.map((candidate) => (
-                    <Link
-                      key={candidate.id}
-                      href={`/candidate/${candidate.id}`}
-                      className="group flex items-center gap-4 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
-                    >
-                      <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-muted">
-                        <span className="text-2xl font-bold text-muted-foreground">
-                          {candidate.name.split(" ")[0].charAt(0)}
-                          {candidate.name.split(" ")[1]?.charAt(0)}
-                        </span>
+                {candidatesLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(2)].map((_, i) => (
+                      <Skeleton key={i} className="h-20 w-full" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {candidates.map((candidate) => (
+                      <Link
+                        key={candidate.id}
+                        href={`/candidate/${candidate.slug}`}
+                        className="group flex items-center gap-4 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
+                      >
+                        <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-muted">
+                          <span className="text-2xl font-bold text-muted-foreground">
+                            {candidate.name.split(" ")[0].charAt(0)}
+                            {candidate.name.split(" ")[1]?.charAt(0)}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold group-hover:text-primary">{candidate.name}</h3>
+                          <p className="text-sm text-muted-foreground">{candidate.position}</p>
+                        </div>
+                        <ExternalLink className="size-5 text-muted-foreground group-hover:text-primary" />
+                      </Link>
+                    ))}
+                    {candidates.length === 0 && (
+                      <div className="py-8 text-center text-sm text-muted-foreground">
+                        No hay candidatos registrados para este partido
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold group-hover:text-primary">{candidate.name}</h3>
-                        <p className="text-sm text-muted-foreground">{candidate.position}</p>
-                      </div>
-                      <ExternalLink className="size-5 text-muted-foreground group-hover:text-primary" />
-                    </Link>
-                  ))}
-                  {candidates.length === 0 && (
-                    <div className="py-8 text-center text-sm text-muted-foreground">
-                      No hay candidatos registrados para este partido
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -177,7 +237,7 @@ export default function PartyPage({ params }: { params: { id: string } }) {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button variant="outline" className="w-full justify-start bg-transparent" asChild>
-                  <Link href={`/compare?party=${party.id}`}>
+                  <Link href={`/compare?party=${party.slug}`}>
                     <ExternalLink className="mr-2 size-4" />
                     Comparar propuestas
                   </Link>
@@ -205,26 +265,32 @@ export default function PartyPage({ params }: { params: { id: string } }) {
                 <CardTitle className="text-base">Información general</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
-                <div>
-                  <div className="mb-1 font-medium">Fundación</div>
-                  <div className="text-muted-foreground">{party.founded}</div>
-                </div>
-                <div>
-                  <div className="mb-1 font-medium">Ideología</div>
-                  <div className="flex flex-wrap gap-1">
-                    {party.ideology.map((ideology) => (
-                      <Badge key={ideology} variant="secondary" className="text-xs">
-                        {ideology}
-                      </Badge>
-                    ))}
+                {party.founded_year && (
+                  <div>
+                    <div className="mb-1 font-medium">Fundación</div>
+                    <div className="text-muted-foreground">{party.founded_year}</div>
                   </div>
-                </div>
-                <div>
-                  <div className="mb-1 font-medium">Representación actual</div>
-                  <div className="text-muted-foreground">
-                    {party.currentRepresentation.deputies} diputados • {party.currentRepresentation.mayors} alcaldías
+                )}
+                {party.ideology && party.ideology.length > 0 && (
+                  <div>
+                    <div className="mb-1 font-medium">Ideología</div>
+                    <div className="flex flex-wrap gap-1">
+                      {party.ideology.map((ideology) => (
+                        <Badge key={ideology} variant="secondary" className="text-xs">
+                          {ideology}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+                {party.current_representation && (
+                  <div>
+                    <div className="mb-1 font-medium">Representación actual</div>
+                    <div className="text-muted-foreground">
+                      {party.current_representation.deputies} diputados • {party.current_representation.mayors} alcaldías
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

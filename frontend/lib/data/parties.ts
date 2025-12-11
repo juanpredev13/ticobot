@@ -16,10 +16,6 @@ export type Party = {
     facebook?: string
     instagram?: string
   }
-  history: {
-    year: number
-    event: string
-  }[]
   currentRepresentation: {
     deputies: number
     mayors: number
@@ -58,28 +54,6 @@ export const PARTIES_DATA: Party[] = [
     description:
       "El Partido Liberación Nacional es una organización política costarricense de ideología socialdemócrata, fundada por José Figueres Ferrer en 1951.",
     website: "https://www.pln.cr",
-    history: [
-      {
-        year: 1951,
-        event: "Fundación del partido por José Figueres Ferrer tras la Guerra Civil de 1948",
-      },
-      {
-        year: 1953,
-        event: "Primera victoria electoral con José Figueres Ferrer como presidente",
-      },
-      {
-        year: 1974,
-        event: "Daniel Oduber Quirós gana la presidencia e impulsa reformas sociales importantes",
-      },
-      {
-        year: 1986,
-        event: "Óscar Arias Sánchez es elegido presidente y más tarde gana el Premio Nobel de la Paz",
-      },
-      {
-        year: 2014,
-        event: "Luis Guillermo Solís gana la presidencia en segunda ronda electoral",
-      },
-    ],
     currentRepresentation: {
       deputies: 17,
       mayors: 23,

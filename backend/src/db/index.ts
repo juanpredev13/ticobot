@@ -14,4 +14,12 @@
 // TODO: Export migration runner
 // export { runMigrations } from './migrations/migration-runner';
 
-export {};
+// Export services
+export { PartiesService } from './services/parties.service.js';
+export type { Party, CreatePartyData, UpdatePartyData } from './services/parties.service.js';
+
+export { CandidatesService } from './services/candidates.service.js';
+export type { Candidate, CreateCandidateData, UpdateCandidateData } from './services/candidates.service.js';
+
+// Export Supabase client factory
+export { createSupabaseClient, createAnonSupabaseClient } from './supabase.js';

@@ -8,20 +8,8 @@ import { Search, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { useDocuments, useHealth } from "@/lib/hooks"
+import { useDocuments, useHealth, useParties } from "@/lib/hooks"
 import { PageErrorBoundary } from "@/components/page-error-boundary"
-
-// Static data for parties (since API doesn't have parties endpoint yet)
-const PARTIES = [
-  { id: "pln", name: "Partido Liberación Nacional" },
-  { id: "pusc", name: "Partido Unidad Social Cristiana" },
-  { id: "pac", name: "Partido Acción Ciudadana" },
-  { id: "fa", name: "Frente Amplio" },
-  { id: "prn", name: "Restauración Nacional" },
-  { id: "plp", name: "Liberal Progresista" },
-  { id: "pnr", name: "Nueva República" },
-  { id: "pin", name: "Partido Integración Nacional" },
-]
 
 // Static data for candidates (since API doesn't have candidates endpoint yet)
 const CANDIDATES = [
@@ -58,10 +46,14 @@ function HomeContent() {
   // Fetch real data from API
   const { data: documentsData, isLoading: documentsLoading } = useDocuments()
   const { data: healthData, isLoading: healthLoading } = useHealth()
+  const { data: partiesData, isLoading: partiesLoading } = useParties()
+
+  // Get parties from API or use empty array
+  const parties = partiesData?.parties || []
 
   // Calculate stats from real data
   const stats = {
-    parties: PARTIES.length,
+    parties: parties.length,
     documents: documentsData?.pagination.total || 0,
     verified: healthData?.status === "healthy" ? "100%" : "N/A",
     status: healthData?.status === "healthy" ? "Neutral" : "Verificando",
@@ -169,21 +161,46 @@ function HomeContent() {
           <p className="text-muted-foreground">Selecciona los partidos que quieres comparar</p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {PARTIES.map((party) => (
-            <Link
-              key={party.id}
-              href={`/party/${party.id}`}
-              className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
-            >
-              <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-muted">
-                <span className="text-lg font-bold text-muted-foreground">{party.name.charAt(0)}</span>
+        {partiesLoading ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="rounded-lg border border-border bg-card p-6"
+              >
+                <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-muted">
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                </div>
+                <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
+                <div className="h-4 w-1/2 rounded bg-muted" />
               </div>
-              <h3 className="mb-2 font-semibold group-hover:text-primary">{party.name}</h3>
-              <p className="text-sm text-muted-foreground">Ver propuestas y documentos</p>
-            </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {parties.map((party) => (
+              <Link
+                key={party.id}
+                href={`/party/${party.slug}`}
+                className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
+              >
+                <div 
+                  className="mb-4 flex size-12 items-center justify-center rounded-lg"
+                  style={{ backgroundColor: party.colors?.primary + '20' }}
+                >
+                  <span 
+                    className="text-lg font-bold"
+                    style={{ color: party.colors?.primary }}
+                  >
+                    {party.abbreviation?.charAt(0) || party.name.charAt(0)}
+                  </span>
+                </div>
+                <h3 className="mb-2 font-semibold group-hover:text-primary">{party.name}</h3>
+                <p className="text-sm text-muted-foreground">Ver propuestas y documentos</p>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Candidates Section */}
