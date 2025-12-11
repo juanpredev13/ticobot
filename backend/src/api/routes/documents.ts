@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { Logger } from '@ticobot/shared';
 
-const router = Router();
+const router: Router = Router();
 const logger = new Logger('DocumentsAPI');
 
 // Initialize Supabase client

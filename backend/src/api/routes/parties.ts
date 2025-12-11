@@ -5,7 +5,7 @@ import { createSupabaseClient } from '../../db/supabase.js';
 import { PartiesService } from '../../db/services/parties.service.js';
 import { CandidatesService } from '../../db/services/candidates.service.js';
 
-const router = Router();
+const router: Router = Router();
 const logger = new Logger('PartiesAPI');
 
 // Initialize services

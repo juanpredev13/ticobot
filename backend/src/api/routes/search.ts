@@ -5,7 +5,7 @@ import { SemanticSearcher } from '../../rag/components/SemanticSearcher.js';
 import { QueryEmbedder } from '../../rag/components/QueryEmbedder.js';
 import { requireAuth, checkRateLimit } from '../middleware/auth.middleware.js';
 
-const router = Router();
+const router: Router = Router();
 const logger = new Logger('SearchAPI');
 
 // Initialize components
@@ -119,11 +119,10 @@ router.post('/', requireAuth, checkRateLimit, async (req: Request, res: Response
         logger.info(`Generated embedding: ${embedding.length} dimensions`);
 
         // Perform semantic search
-        const results = await searcher.search(embedding, {
-            topK: params.limit,
-            minRelevanceScore: params.minScore,
-            filters: params.party ? { partyId: params.party } : undefined
-        });
+        const filters = params.party ? { partyId: params.party } : undefined;
+        const results = params.minScore > 0
+            ? await searcher.searchWithThreshold(embedding, params.limit, params.minScore, filters)
+            : await searcher.search(embedding, params.limit, filters);
 
         logger.info(`Search completed: ${results.length} results found`);
 
@@ -137,14 +136,14 @@ router.post('/', requireAuth, checkRateLimit, async (req: Request, res: Response
         res.json({
             query: params.query,
             results: results.map(result => ({
-                id: result.id,
-                content: result.content,
+                id: result.document.id,
+                content: result.document.content,
                 score: result.score,
-                metadata: result.metadata,
+                metadata: result.document.metadata,
                 // Include page information if available
-                page: result.metadata?.pageNumber ||
-                      (result.metadata?.pageRange ?
-                        `${result.metadata.pageRange.start}-${result.metadata.pageRange.end}` :
+                page: result.document.metadata?.pageNumber ||
+                      (result.document.metadata?.pageRange ?
+                        `${result.document.metadata.pageRange.start}-${result.document.metadata.pageRange.end}` :
                         null)
             })),
             count: results.length,
@@ -249,11 +248,10 @@ router.get('/', requireAuth, checkRateLimit, async (req: Request, res: Response,
         }
 
         // Perform semantic search
-        const results = await searcher.search(embedding, {
-            topK: params.limit,
-            minRelevanceScore: params.minScore,
-            filters: params.party ? { partyId: params.party } : undefined
-        });
+        const filters = params.party ? { partyId: params.party } : undefined;
+        const results = params.minScore > 0
+            ? await searcher.searchWithThreshold(embedding, params.limit, params.minScore, filters)
+            : await searcher.search(embedding, params.limit, filters);
 
         logger.info(`Search completed: ${results.length} results found`);
 
@@ -267,13 +265,13 @@ router.get('/', requireAuth, checkRateLimit, async (req: Request, res: Response,
         res.json({
             query: params.query,
             results: results.map(result => ({
-                id: result.id,
-                content: result.content,
+                id: result.document.id,
+                content: result.document.content,
                 score: result.score,
-                metadata: result.metadata,
-                page: result.metadata?.pageNumber ||
-                      (result.metadata?.pageRange ?
-                        `${result.metadata.pageRange.start}-${result.metadata.pageRange.end}` :
+                metadata: result.document.metadata,
+                page: result.document.metadata?.pageNumber ||
+                      (result.document.metadata?.pageRange ?
+                        `${result.document.metadata.pageRange.start}-${result.document.metadata.pageRange.end}` :
                         null)
             })),
             count: results.length,

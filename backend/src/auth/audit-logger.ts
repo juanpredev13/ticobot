@@ -12,7 +12,10 @@ import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
 import { Request } from 'express';
 
-const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(
+  env.SUPABASE_URL || '',
+  env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
 
 export type EventCategory = 'auth' | 'query' | 'admin' | 'security';
 export type EventSeverity = 'info' | 'warning' | 'error' | 'critical';

@@ -1,5 +1,4 @@
 import jwt, { type SignOptions } from 'jsonwebtoken';
-import type { StringValue } from 'ms';
 import { env } from '../config/env.js';
 
 export interface JWTPayload {
@@ -18,7 +17,7 @@ export function generateAccessToken(payload: JWTPayload): string {
 
   const secret: string = env.JWT_SECRET;
   const options: SignOptions = {
-    expiresIn: env.JWT_ACCESS_EXPIRY as StringValue,
+    expiresIn: env.JWT_ACCESS_EXPIRY as any,
     issuer: 'ticobot-api',
     audience: 'ticobot-client',
   };
@@ -35,7 +34,7 @@ export function generateRefreshToken(payload: JWTPayload): string {
 
   const secret: string = env.JWT_SECRET;
   const options: SignOptions = {
-    expiresIn: env.JWT_REFRESH_EXPIRY as StringValue,
+    expiresIn: env.JWT_REFRESH_EXPIRY as any,
     issuer: 'ticobot-api',
     audience: 'ticobot-client',
   };

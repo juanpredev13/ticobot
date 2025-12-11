@@ -191,7 +191,7 @@ export default function ComparePage() {
         <div className="grid gap-6 lg:grid-cols-2">
           {selectedParties.map((partyId) => {
             const party = PARTIES.find((p) => p.id === partyId)
-            const proposal = MOCK_PROPOSALS[selectedTopic as keyof typeof MOCK_PROPOSALS]?.[partyId]
+            const proposal = (MOCK_PROPOSALS as any)[selectedTopic]?.[partyId]
 
             return (
               <Card key={partyId} className="flex flex-col">
@@ -221,7 +221,7 @@ export default function ComparePage() {
                       <div>
                         <h4 className="mb-2 text-sm font-semibold text-muted-foreground">Puntos clave</h4>
                         <ul className="space-y-2">
-                          {proposal.points.map((point, index) => (
+                          {proposal.points.map((point: string, index: number) => (
                             <li key={index} className="flex gap-2 text-sm leading-relaxed">
                               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
                               <span>{point}</span>

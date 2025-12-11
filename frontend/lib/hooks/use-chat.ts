@@ -50,20 +50,3 @@ export function useChat() {
     },
   });
 }
-
-/**
- * Hook for streaming chat (future implementation)
- */
-export function useChatStream() {
-  return useMutation({
-    mutationFn: (request: ChatRequest) => chatService.stream(request),
-    retry: false, // Don't retry streaming requests
-    onError: (error) => {
-      const message =
-        error instanceof APIError
-          ? error.message
-          : 'Error en streaming de chat. Intenta el modo normal.';
-      toast.error(message);
-    },
-  });
-}

@@ -4,7 +4,7 @@ import { Logger } from '@ticobot/shared';
 import { RAGPipeline } from '../../rag/components/RAGPipeline.js';
 import { optionalAuth, checkRateLimit } from '../middleware/auth.middleware.js';
 
-const router = Router();
+const router: Router = Router();
 const logger = new Logger('ChatAPI');
 
 // Initialize RAG pipeline
@@ -158,7 +158,7 @@ router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFun
             minRelevanceScore: params.minRelevanceScore
         });
 
-        logger.info(`Chat completed: ${result.sources.length} sources used, ${result.tokensUsed} tokens`);
+        logger.info(`Chat completed: ${result.sources.length} sources used, ${result.metadata.tokensUsed || 0} tokens`);
 
         res.json({
             answer: result.answer,
@@ -167,17 +167,14 @@ router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFun
                 content: source.content,
                 party: source.party,
                 document: source.document,
-                page: source.pageNumber ||
-                      (source.pageRange ?
-                        `${source.pageRange.start}-${source.pageRange.end}` :
-                        null),
+                page: null,
                 relevanceScore: source.relevance || 0
             })),
             metadata: {
                 model: result.metadata.model,
-                tokensUsed: result.tokensUsed,
+                tokensUsed: result.metadata.tokensUsed,
                 sourcesCount: result.sources.length,
-                processingTime: result.metadata.processingTime
+                processingTime: result.metadata.queryTime
             },
             filters: {
                 party: params.party || null,
@@ -278,10 +275,7 @@ router.post('/stream', optionalAuth, async (req: Request, res: Response, next: N
                     content: source.content,
                     party: source.party,
                     document: source.document,
-                    page: source.pageNumber ||
-                          (source.pageRange ?
-                            `${source.pageRange.start}-${source.pageRange.end}` :
-                            null),
+                    page: null,
                     relevanceScore: source.relevance || 0
                 }))
             })}\n\n`);
@@ -307,9 +301,9 @@ router.post('/stream', optionalAuth, async (req: Request, res: Response, next: N
                 type: 'done',
                 metadata: {
                     model: result.metadata.model,
-                    tokensUsed: result.tokensUsed,
+                    tokensUsed: result.metadata.tokensUsed,
                     sourcesCount: result.sources.length,
-                    processingTime: result.metadata.processingTime
+                    processingTime: result.metadata.queryTime
                 }
             })}\n\n`);
 

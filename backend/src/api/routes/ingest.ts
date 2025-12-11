@@ -3,7 +3,7 @@ import { IngestPipeline, IngestOptions } from '../../ingest/components/IngestPip
 import { Logger } from '@ticobot/shared';
 import { requireAuth, requireAdmin } from '../middleware/auth.middleware.js';
 
-const router = Router();
+const router: Router = Router();
 const logger = new Logger('IngestAPI');
 
 /**
