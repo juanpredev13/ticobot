@@ -3,10 +3,15 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
+import { useUser, useLogout } from "@/lib/hooks/use-auth"
+import { Button } from "@/components/ui/button"
+import { LogOut, User } from "lucide-react"
 
 export function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const pathname = usePathname()
+  const { data: user } = useUser(false)
+  const logoutMutation = useLogout()
 
   const navItems = [
     { href: "/", label: "Inicio" },
@@ -64,18 +69,57 @@ export function SiteHeader() {
               ))}
             </nav>
 
-            {/* Desktop CTA Button with glass effect */}
-            <Link
-              href="/chat?focus=true"
-              className="hidden md:inline-flex px-5 py-2 text-sm font-medium rounded-full transition-all duration-200 hover:scale-105"
-              style={{
-                background: "rgba(20, 184, 166, 0.9)",
-                color: "white",
-                boxShadow: "0 4px 16px rgba(20, 184, 166, 0.3)",
-              }}
-            >
-              Hacer pregunta
-            </Link>
+            {/* Desktop Auth Buttons or User Menu */}
+            <div className="hidden md:flex items-center gap-3">
+              {user ? (
+                <>
+                  <Link
+                    href="/chat?focus=true"
+                    className="inline-flex px-5 py-2 text-sm font-medium rounded-full transition-all duration-200 hover:scale-105"
+                    style={{
+                      background: "rgba(20, 184, 166, 0.9)",
+                      color: "white",
+                      boxShadow: "0 4px 16px rgba(20, 184, 166, 0.3)",
+                    }}
+                  >
+                    Hacer pregunta
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => logoutMutation.mutate()}
+                    disabled={logoutMutation.isPending}
+                    className="text-slate-700 hover:text-slate-900"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Salir
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-slate-700 hover:text-slate-900"
+                    >
+                      Iniciar sesión
+                    </Button>
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="inline-flex px-5 py-2 text-sm font-medium rounded-full transition-all duration-200 hover:scale-105"
+                    style={{
+                      background: "rgba(20, 184, 166, 0.9)",
+                      color: "white",
+                      boxShadow: "0 4px 16px rgba(20, 184, 166, 0.3)",
+                    }}
+                  >
+                    Crear cuenta
+                  </Link>
+                </>
+              )}
+            </div>
 
             {/* Mobile hamburger */}
             <button
@@ -134,30 +178,64 @@ export function SiteHeader() {
           </div>
 
           <div className="mt-auto pt-8 flex flex-col gap-4 mb-4" style={{ borderTop: "1px solid rgba(0, 0, 0, 0.1)" }}>
-            <Link
-              href="/compare"
-              className="w-full py-5 px-4 rounded-2xl text-center text-lg font-medium transition-all duration-200"
-              style={{
-                background: "rgba(20, 184, 166, 0.9)",
-                color: "white",
-                boxShadow: "0 4px 16px rgba(20, 184, 166, 0.3)",
-              }}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Comparar partidos
-            </Link>
-            <Link
-              href="/chat?focus=true"
-              className="w-full py-5 px-4 rounded-2xl text-center text-lg font-medium transition-all duration-200"
-              style={{
-                background: "rgba(20, 184, 166, 0.15)",
-                color: "rgb(20, 184, 166)",
-                border: "1px solid rgba(20, 184, 166, 0.3)",
-              }}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Hacer una pregunta
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  href="/chat?focus=true"
+                  className="w-full py-5 px-4 rounded-2xl text-center text-lg font-medium transition-all duration-200"
+                  style={{
+                    background: "rgba(20, 184, 166, 0.9)",
+                    color: "white",
+                    boxShadow: "0 4px 16px rgba(20, 184, 166, 0.3)",
+                  }}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Hacer una pregunta
+                </Link>
+                <button
+                  onClick={() => {
+                    logoutMutation.mutate()
+                    setIsMenuOpen(false)
+                  }}
+                  disabled={logoutMutation.isPending}
+                  className="w-full py-5 px-4 rounded-2xl text-center text-lg font-medium transition-all duration-200"
+                  style={{
+                    background: "rgba(20, 184, 166, 0.15)",
+                    color: "rgb(20, 184, 166)",
+                    border: "1px solid rgba(20, 184, 166, 0.3)",
+                  }}
+                >
+                  {logoutMutation.isPending ? "Cerrando sesión..." : "Cerrar sesión"}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="w-full py-5 px-4 rounded-2xl text-center text-lg font-medium transition-all duration-200"
+                  style={{
+                    background: "rgba(20, 184, 166, 0.15)",
+                    color: "rgb(20, 184, 166)",
+                    border: "1px solid rgba(20, 184, 166, 0.3)",
+                  }}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Iniciar sesión
+                </Link>
+                <Link
+                  href="/signup"
+                  className="w-full py-5 px-4 rounded-2xl text-center text-lg font-medium transition-all duration-200"
+                  style={{
+                    background: "rgba(20, 184, 166, 0.9)",
+                    color: "white",
+                    boxShadow: "0 4px 16px rgba(20, 184, 166, 0.3)",
+                  }}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Crear cuenta
+                </Link>
+              </>
+            )}
           </div>
         </nav>
       </div>
