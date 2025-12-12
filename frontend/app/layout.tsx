@@ -5,11 +5,17 @@ import "./globals.css"
 import { SiteHeader } from "@/components/site-header"
 import { BottomMobileNav } from "@/components/bottom-mobile-nav"
 import { QueryProvider } from "@/components/providers/query-provider"
-import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "sonner"
+import dynamic from "next/dynamic"
 
 // Force dynamic rendering to avoid SSR context errors
 export const dynamic = 'force-dynamic'
+
+// Load ThemeProvider dynamically to avoid SSR issues
+const ThemeProvider = dynamic(
+  () => import("@/components/theme-provider").then((mod) => mod.ThemeProvider),
+  { ssr: false }
+)
 
 const unbounded = Unbounded({
   subsets: ["latin"],

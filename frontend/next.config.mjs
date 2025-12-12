@@ -6,10 +6,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Disable static generation to avoid SSR context errors
-  experimental: {
-    dynamicIO: true,
-  },
   // Explicitly define environment variables for Railway
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
