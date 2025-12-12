@@ -1,18 +1,46 @@
 # Railway Deployment Setup
 
-This guide explains how to configure Railway for deploying the TicoBot backend in a monorepo setup.
+This guide explains how to configure Railway for deploying both TicoBot backend and frontend in a monorepo setup.
 
 ## Problem
 
-The backend depends on `@ticobot/shared` which is a workspace package. Railway needs to build from the repository root to resolve workspace dependencies.
+Both backend and frontend depend on `@ticobot/shared` which is a workspace package. Railway needs to build from the repository root to resolve workspace dependencies.
 
 ## Solution
 
-### Option 1: Configure Root Directory as Repository Root (Recommended)
+### Configuration for Both Services
 
-1. In Railway dashboard, go to your backend service settings
-2. Set **Root Directory** to `.` (repository root, leave empty or use `.`)
-3. Set **Build Command** to:
+Each service has its own `railway.json` file that Railway will automatically detect:
+
+- **Backend Service**: Uses `backend/railway.json`
+- **Frontend Service**: Uses `frontend/railway.json`
+
+**Important**: Make sure the Root Directory is set to `.` (repository root) for both services so Railway can find the workspace packages.
+
+**Steps for each service:**
+
+1. **Backend Service:**
+   - In Railway dashboard, go to your **backend** service → Settings
+   - Set **Root Directory** to `.` (repository root, or leave empty)
+   - Railway will automatically use the build and start commands from `backend/railway.json`:
+     - Build: `pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build`
+     - Start: `cd backend && pnpm start`
+
+2. **Frontend Service:**
+   - In Railway dashboard, go to your **frontend** service → Settings
+   - Set **Root Directory** to `.` (repository root, or leave empty)
+   - Railway will automatically use the build and start commands from `frontend/railway.json`:
+     - Build: `pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/frontend build`
+     - Start: `cd frontend && pnpm start`
+
+### Manual Configuration (If Automatic Detection Doesn't Work)
+
+If Railway doesn't automatically detect the configuration files, you can set them manually:
+
+**Backend Service:**
+1. In Railway dashboard, go to your **backend** service → Settings
+2. Set **Root Directory** to `.` (repository root, or leave empty)
+3. Set **Build Command** (Custom Build Command) to:
    ```bash
    pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build
    ```
@@ -21,11 +49,17 @@ The backend depends on `@ticobot/shared` which is a workspace package. Railway n
    cd backend && pnpm start
    ```
 
-### Option 2: Use railway.json Configuration
-
-Railway will automatically detect `backend/railway.json` if:
-- Root Directory is set to `.` (repository root)
-- The file exists at `backend/railway.json`
+**Frontend Service:**
+1. In Railway dashboard, go to your **frontend** service → Settings
+2. Set **Root Directory** to `.` (repository root, or leave empty)
+3. Set **Build Command** (Custom Build Command) to:
+   ```bash
+   pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/frontend build
+   ```
+4. Set **Start Command** to:
+   ```bash
+   cd frontend && pnpm start
+   ```
 
 The `backend/railway.json` file contains:
 ```json
@@ -85,12 +119,22 @@ FRONTEND_URL=https://ticobot.vercel.app
 
 ### Error: "@ticobot/shared@workspace:*" is in the dependencies but no package named "@ticobot/shared" is present
 
-**Cause**: Root Directory is set to `backend/` instead of repository root.
+**Cause**: Root Directory is set to `backend/` or `frontend/` instead of repository root.
 
 **Fix**: 
-1. Go to Railway service settings
-2. Change Root Directory from `backend/` to `.` (or leave empty)
+1. Go to Railway service settings (for the affected service)
+2. Change Root Directory from `backend/` or `frontend/` to `.` (or leave empty)
 3. Redeploy
+
+### Frontend service is using backend build command
+
+**Cause**: Railway is detecting the wrong `railway.json` file or Root Directory is incorrect.
+
+**Fix**:
+1. Ensure `frontend/railway.json` exists with the correct build command
+2. Set Root Directory to `.` (repository root) for the frontend service
+3. Verify the Custom Build Command shows: `pnpm --filter @ticobot/frontend build` (not `@ticobot/backend`)
+4. Redeploy
 
 ### Error: Cannot find module '@ticobot/shared'
 
