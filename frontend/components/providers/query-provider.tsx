@@ -2,28 +2,31 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 
 export function QueryProvider({ children }: { children: ReactNode }) {
-  // Only create QueryClient on client side to avoid SSR issues
-  const [queryClient] = useState(
-    () =>
-      typeof window !== 'undefined'
-        ? new QueryClient({
-            defaultOptions: {
-              queries: {
-                staleTime: 60 * 1000, // 1 minute
-                gcTime: 5 * 60 * 1000, // 5 minutes
-                retry: 1,
-                refetchOnWindowFocus: false,
-              },
-            },
-          })
-        : null
-  );
+  const [queryClient, setQueryClient] = useState<QueryClient | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    // Only create QueryClient on client side after mount
+    setIsMounted(true);
+    setQueryClient(
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000, // 1 minute
+            gcTime: 5 * 60 * 1000, // 5 minutes
+            retry: 1,
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+    );
+  }, []);
 
   // During SSR/build, render children without QueryClientProvider
-  if (!queryClient || typeof window === 'undefined') {
+  if (!isMounted || !queryClient) {
     return <>{children}</>;
   }
 
