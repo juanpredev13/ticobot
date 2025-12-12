@@ -38,16 +38,25 @@ Each service has its own `railway.json` file that Railway will automatically det
 If Railway doesn't automatically detect the configuration files, you can set them manually:
 
 **Backend Service:**
-1. In Railway dashboard, go to your **backend** service → Settings
-2. Set **Root Directory** to `.` (repository root, or leave empty)
-3. Set **Build Command** (Custom Build Command) to:
-   ```bash
-   pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build
-   ```
-4. Set **Start Command** to:
-   ```bash
-   cd backend && pnpm start
-   ```
+1. In Railway dashboard, go to your **backend** service → **Settings** tab
+2. In the **Source** section:
+   - Find **Root directory** field
+   - Set it to `.` (dot) or leave it **empty** (repository root)
+   - **Important**: It should NOT be `backend/`
+3. In the **Build** section:
+   - Find **Custom Build Command** field
+   - Set it to:
+     ```bash
+     pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build
+     ```
+4. In the **Deploy** section:
+   - Find **Custom Start Command** field
+   - Set it to:
+     ```bash
+     cd backend && pnpm start
+     ```
+5. Click **Save** or **Update** button
+6. Go to **Deployments** tab and click **Redeploy**
 
 **Frontend Service:**
 1. In Railway dashboard, go to your **frontend** service → Settings
@@ -138,11 +147,41 @@ FRONTEND_URL=https://ticobot.vercel.app
 
 ### Error: Cannot find module '@ticobot/shared'
 
-**Cause**: The `shared` package wasn't built before building the backend.
+**Cause**: The `shared` package wasn't built before building the backend, OR Railway is not using the build command from `railway.json`.
 
-**Fix**: Ensure the build command includes:
-```bash
-pnpm --filter @ticobot/shared build
-```
-before building the backend.
+**Symptoms**:
+- Railway logs show: `pnpm --filter @ticobot/backend build` (without building shared first)
+- Build path shows `/app/backend` instead of `/app`
+- TypeScript errors: `Cannot find module '@ticobot/shared'`
+
+**Fix - Step by Step**:
+
+1. **Verify Root Directory**:
+   - Go to Railway Dashboard → Your Backend Service → Settings
+   - Check **Root Directory** field
+   - It MUST be `.` (dot) or empty (repository root)
+   - If it shows `backend/`, change it to `.` (or leave empty)
+   - Click **Save**
+
+2. **Set Custom Build Command Manually** (Railway may not auto-detect `railway.json`):
+   - In the same Settings page, find **Build Command** or **Custom Build Command**
+   - Set it to:
+     ```bash
+     pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build
+     ```
+   - Click **Save**
+
+3. **Set Start Command**:
+   - Find **Start Command** field
+   - Set it to:
+     ```bash
+     cd backend && pnpm start
+     ```
+   - Click **Save**
+
+4. **Redeploy**:
+   - Go to **Deployments** tab
+   - Click **Redeploy** or trigger a new deployment
+
+**Important**: Even if `backend/railway.json` exists, Railway may not automatically use it. Always configure the build command manually in Railway Dashboard to ensure it works correctly.
 
