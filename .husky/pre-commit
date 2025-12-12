@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running type-check before commit..."
+
+# Get list of staged TypeScript files
+STAGED_TS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' || true)
+
+# If there are no TypeScript files staged, skip type-check
+if [ -z "$STAGED_TS_FILES" ]; then
+  echo "✅ No TypeScript files staged, skipping type-check"
+  exit 0
+fi
+
+echo "📝 Found TypeScript files staged for commit:"
+echo "$STAGED_TS_FILES" | sed 's/^/   - /'
+
+# Run type-check
+echo ""
+echo "🔧 Running pnpm type-check..."
+pnpm type-check
+
+# Check exit status
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Type-check failed! Please fix TypeScript errors before committing."
+  echo "   You can skip this check with: git commit --no-verify"
+  exit 1
+fi
+
+echo ""
+echo "✅ Type-check passed! Proceeding with commit..."
+
