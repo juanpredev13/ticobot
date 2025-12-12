@@ -3,19 +3,19 @@
  */
 
 // Test provider imports
-import { ProviderFactory } from './factory/ProviderFactory';
-import { OpenAIEmbeddingProvider } from './providers/embedding/OpenAIEmbeddingProvider';
-import { OpenAILLMProvider } from './providers/llm/OpenAILLMProvider';
-import { SupabaseVectorStore } from './providers/vector/SupabaseVectorStore';
+import { ProviderFactory } from './factory/ProviderFactory.js';
+import { OpenAIEmbeddingProvider } from './providers/embedding/OpenAIEmbeddingProvider.js';
+import { OpenAILLMProvider } from './providers/llm/OpenAILLMProvider.js';
+import { SupabaseVectorStore } from './providers/vector/SupabaseVectorStore.js';
 
 // Test config import
-import { env, validateEnv } from './config/env';
+import { env, validateEnv } from './config/env.js';
 
 // Test new module imports (should work even if empty)
-import * as ingest from './ingest';
-import * as rag from './rag';
-import * as db from './db';
-import * as api from './api';
+import * as ingest from './ingest/index.js';
+import * as rag from './rag/index.js';
+import * as db from './db/index.js';
+import * as api from './api/index.js';
 
 console.log('✅ All imports successful!');
 console.log('✅ Folder structure is correct!');

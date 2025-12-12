@@ -17,7 +17,7 @@ export type {
     DocumentItem,
     ErrorResponse,
     HealthResponse
-  } from './types/api.types';
+  } from './types/api.types.js';
   
   // TODO: Export routes when implemented
   // export { chatRouter } from './routes/chat.routes';

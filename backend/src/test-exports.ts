@@ -4,7 +4,7 @@
  */
 
 // This is how other packages will import from @ticobot/backend
-import { ProviderFactory } from './factory/ProviderFactory';
+import { ProviderFactory } from './factory/ProviderFactory.js';
 import type {
   IEmbeddingProvider,
   ILLMProvider,

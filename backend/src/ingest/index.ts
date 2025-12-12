@@ -12,7 +12,7 @@ export type {
     TextChunk,
     ChunkMetadata,
     IngestResult
-} from './types/ingest.types';
+} from './types/ingest.types.js';
   
   // TODO: Export components when implemented
   // export { PDFDownloader } from './components/PDFDownloader';

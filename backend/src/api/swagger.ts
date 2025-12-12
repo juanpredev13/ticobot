@@ -1,4 +1,5 @@
 import swaggerJsdoc from 'swagger-jsdoc';
+// @ts-ignore - Import attributes with type: 'json' require Node 20+
 import packageJson from '../../package.json' with { type: 'json' };
 
 const options: swaggerJsdoc.Options = {

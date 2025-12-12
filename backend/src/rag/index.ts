@@ -13,7 +13,7 @@ export type {
     ConversationMessage,
     SearchResult,
     RAGResponse
-} from './types/rag.types';
+} from './types/rag.types.js';
   
   // Export RAG components
   export { QueryEmbedder } from './components/QueryEmbedder.js';
