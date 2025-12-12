@@ -165,19 +165,25 @@ FRONTEND_URL=https://your-frontend-service.railway.app
 
 ### Frontend Service Variables
 
+**Requeridas**:
 ```bash
 NODE_ENV=production
-# PORT is automatically set by Railway, don't override it
-
-# Backend API URL - CRITICAL for fixing 502 errors
-# Get this from your backend service's public URL in Railway
-# Format: https://your-backend-service.railway.app
 NEXT_PUBLIC_API_URL=https://your-backend-service.railway.app
+```
 
-# Optional
+**Opcionales**:
+```bash
 NEXT_PUBLIC_API_TIMEOUT=30000
 NEXT_PUBLIC_ENABLE_QUERY_DEVTOOLS=false
 ```
+
+**Notas**:
+- `PORT` es automáticamente configurado por Railway, no lo sobrescribas
+- `NEXT_PUBLIC_API_URL` es **CRÍTICA** - sin ella obtendrás errores 502
+- Obtén la URL del backend desde: Backend Service → Settings → Networking → Public Domain
+- Las variables `NEXT_PUBLIC_*` se incrustan en el build, así que necesitas redeployar después de cambiarlas
+
+**Ver documentación completa**: Ver `docs/development/FRONTEND_ENV_VARIABLES.md`
 
 ### How to Get Backend URL in Railway
 
