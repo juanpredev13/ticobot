@@ -16,6 +16,8 @@ name = "backend"
 [services.build]
 builder = "NIXPACKS"
 # Build shared package first, then backend (monorepo shared pattern)
+# Include devDependencies needed for build (TypeScript, etc.)
+# The warning about --production is harmless, but we need devDeps for the build
 command = "pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build"
 
 [services.deploy]
@@ -35,6 +37,8 @@ name = "frontend"
 [services.build]
 builder = "NIXPACKS"
 # Build shared package first, then frontend (monorepo shared pattern)
+# Include devDependencies needed for build (TypeScript, etc.)
+# The warning about --production is harmless, but we need devDeps for the build
 command = "pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/frontend build"
 
 [services.deploy]
