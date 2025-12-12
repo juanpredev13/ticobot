@@ -9,7 +9,7 @@
     "build:check": "pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build && pnpm --filter @ticobot/frontend build",
     "test": "pnpm --recursive test",
     "lint": "echo '⚠️  Linting skipped (ESLint config needed)' && exit 0",
-    "type-check": "pnpm --filter @ticobot/backend type-check && pnpm --filter @ticobot/frontend type-check",
+    "type-check": "pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend type-check && pnpm --filter @ticobot/frontend type-check",
     "validate": "pnpm type-check && pnpm build:check",
     "pre-deploy": "pnpm validate",
     "clean": "pnpm --recursive clean"
