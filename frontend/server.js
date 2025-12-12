@@ -19,9 +19,11 @@ console.log(`Working Directory: ${process.cwd()}`);
 console.log('==========================================');
 
 // Start Next.js with explicit port and host
-const nextProcess = spawn('next', ['start', '-H', '0.0.0.0', '-p', PORT], {
+// Use npx to ensure next is found in node_modules/.bin
+const nextProcess = spawn('npx', ['next', 'start', '-H', '0.0.0.0', '-p', PORT], {
   stdio: 'inherit',
   shell: true,
+  cwd: __dirname, // Ensure we're in the frontend directory
   env: {
     ...process.env,
     PORT: PORT,

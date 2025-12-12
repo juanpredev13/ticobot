@@ -5,7 +5,7 @@
     "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/frontend build"
   },
   "deploy": {
-    "startCommand": "cd frontend && bash start.sh",
+    "startCommand": "pnpm --filter @ticobot/frontend start",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
