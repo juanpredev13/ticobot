@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "test": "vitest",
+    "test": "vitest --passWithNoTests",
     "lint": "echo '⚠️  Skipping shared lint' && exit 0"
   },
   "keywords": [

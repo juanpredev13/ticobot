@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll } from '@jest/globals';
-import { RAGPipeline } from '../components/RAGPipeline';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { RAGPipeline } from '../components/RAGPipeline.js';
 
 /**
  * RAGPipeline Integration Tests
