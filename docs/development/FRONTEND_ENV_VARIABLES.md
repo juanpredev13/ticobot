@@ -2,6 +2,16 @@
 
 ## Variables Requeridas (Producción)
 
+### `PORT` ✅ **Automática (Railway)**
+
+**Descripción**: Puerto en el que Next.js escuchará. Railway asigna esto automáticamente.
+
+**Nota**: 
+- ✅ Railway configura esta variable automáticamente
+- ✅ Next.js la detecta automáticamente
+- ❌ **NO** la configures manualmente en Railway
+- El puerto puede variar (ej: 8080, 3000, etc.)
+
 ### `NEXT_PUBLIC_API_URL` ⚠️ **REQUERIDA**
 
 **Descripción**: URL del backend API al que el frontend se conectará.
