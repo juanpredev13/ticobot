@@ -2,8 +2,7 @@ import { QueryEmbedder } from './QueryEmbedder.js';
 import { SemanticSearcher } from './SemanticSearcher.js';
 import { ContextBuilder } from './ContextBuilder.js';
 import { ResponseGenerator } from './ResponseGenerator.js';
-import { Logger } from '../../../../shared/src/utils/Logger.js';
-import type { SearchResult } from '../../../../shared/src/types/common.js';
+import { Logger, type SearchResult } from '@ticobot/shared';
 
 /**
  * RAGPipeline - Main orchestrator for Retrieval-Augmented Generation

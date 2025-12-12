@@ -1,5 +1,5 @@
 import { ProviderFactory } from '../../factory/ProviderFactory.js';
-import { Logger } from '../../../../shared/src/utils/Logger.js';
+import { Logger } from '@ticobot/shared';
 
 /**
  * QueryEmbedder Component

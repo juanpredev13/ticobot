@@ -1,5 +1,4 @@
-import { Logger } from '../../../../shared/src/utils/Logger.js';
-import type { SearchResult } from '../../../../shared/src/types/common.js';
+import { Logger, type SearchResult } from '@ticobot/shared';
 
 /**
  * ContextBuilder Component

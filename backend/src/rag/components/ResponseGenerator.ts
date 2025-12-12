@@ -1,6 +1,5 @@
 import { ProviderFactory } from '../../factory/ProviderFactory.js';
-import { Logger } from '../../../../shared/src/utils/Logger.js';
-import type { LLMMessage, LLMResponse } from '../../../../shared/src/types/common.js';
+import { Logger, type LLMMessage, type LLMResponse } from '@ticobot/shared';
 
 /**
  * ResponseGenerator Component
