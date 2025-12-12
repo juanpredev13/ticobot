@@ -201,6 +201,48 @@ NEXT_PUBLIC_ENABLE_QUERY_DEVTOOLS=false
 
 ## Troubleshooting
 
+### Frontend Container Stops After Starting
+
+**Síntomas**:
+- Next.js inicia correctamente: `Ready in XXXms`
+- Luego aparece: `Stopping Container` y `ELIFECYCLE Command failed`
+- El contenedor se detiene
+
+**Causas posibles**:
+
+1. **Next.js no está escuchando en el host correcto**:
+   - Next.js debe escuchar en `0.0.0.0`, no solo en `localhost`
+   - Next.js 16 lo hace automáticamente cuando detecta `PORT`
+
+2. **Problema con la variable PORT**:
+   - Railway asigna `PORT` automáticamente
+   - Next.js la detecta automáticamente
+   - No necesitas configurarla manualmente
+
+3. **Error en el código que causa que el proceso se detenga**:
+   - Revisa los logs completos del frontend en Railway
+   - Busca errores de JavaScript o TypeScript
+   - Verifica que no haya errores de importación o inicialización
+
+**Solución**:
+
+1. **Verifica los logs completos**:
+   - Railway Dashboard → Frontend Service → Logs
+   - Busca errores después de "Ready in XXXms"
+
+2. **Verifica que Next.js esté escuchando correctamente**:
+   - Los logs deberían mostrar: `- Local: http://localhost:PORT` y `- Network: http://0.0.0.0:PORT`
+   - Si solo muestra `localhost`, puede haber un problema
+
+3. **Verifica variables de entorno**:
+   - Asegúrate de que `NODE_ENV=production` esté configurado
+   - Verifica que `NEXT_PUBLIC_API_URL` esté configurado correctamente
+
+4. **Si el problema persiste**:
+   - Intenta hacer un redeploy completo
+   - Verifica que el build se complete sin errores
+   - Revisa si hay errores en el código que se ejecutan al iniciar
+
 ### Error 502 Bad Gateway
 
 **Cause**: The frontend cannot connect to the backend because `NEXT_PUBLIC_API_URL` is not configured correctly.
