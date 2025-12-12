@@ -18,11 +18,30 @@ const logger = new Logger('Server');
 export function createApp(): Express {
     const app = express();
 
-    // CORS configuration
+    // CORS configuration - Enhanced for Railway deployment
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const corsOptions = {
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+            // Allow requests with no origin (like mobile apps, Postman, or curl)
+            if (!origin) {
+                return callback(null, true);
+            }
+            // Allow requests from frontend URL
+            if (origin === frontendUrl) {
+                return callback(null, true);
+            }
+            // In development, allow localhost
+            if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
+                return callback(null, true);
+            }
+            // Reject other origins
+            callback(new Error('Not allowed by CORS'));
+        },
         credentials: true,
         optionsSuccessStatus: 200,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        exposedHeaders: ['Content-Length', 'X-Request-Id'],
     };
     app.use(cors(corsOptions));
     
@@ -138,8 +157,10 @@ export function createApp(): Express {
 export function startServer(port: number = 3000): void {
     const app = createApp();
 
-    app.listen(port, () => {
+    // Listen on 0.0.0.0 to accept connections from all network interfaces (required for Railway)
+    app.listen(port, '0.0.0.0', () => {
         logger.info(`🚀 TicoBot Backend Server started on port ${port}`);
+        logger.info(`   Listening on: 0.0.0.0:${port}`);
         logger.info(`   API Info: http://localhost:${port}/api`);
         logger.info(`   API Docs: http://localhost:${port}/api/docs`);
         logger.info(`   Health: http://localhost:${port}/health`);
