@@ -142,7 +142,7 @@ export function startServer(port: number = 3000): void {
     const app = createApp();
 
     // Listen on 0.0.0.0 to accept connections from all network interfaces (required for Railway)
-    app.listen(port, '0.0.0.0', () => {
+    const server = app.listen(port, '0.0.0.0', () => {
         logger.info(`🚀 TicoBot Backend Server started on port ${port}`);
         logger.info(`   Listening on: 0.0.0.0:${port}`);
         logger.info(`   API Info: http://localhost:${port}/api`);
@@ -156,6 +156,12 @@ export function startServer(port: number = 3000): void {
         logger.info(`   Parties: http://localhost:${port}/api/parties`);
         logger.info(`   Candidates: http://localhost:${port}/api/candidates`);
     });
+
+    // Configure Keep-Alive timeout for Railway compatibility
+    // Railway expects connections to stay open for ~60 seconds
+    // Node.js default is 5 seconds, which can cause 502 errors
+    server.keepAliveTimeout = 65000; // 65 seconds
+    server.headersTimeout = 66000; // 66 seconds (must be > keepAliveTimeout)
 }
 
 // Start server if this file is run directly
