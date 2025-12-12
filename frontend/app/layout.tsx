@@ -4,18 +4,7 @@ import { Unbounded, Geist } from "next/font/google"
 import "./globals.css"
 import { SiteHeader } from "@/components/site-header"
 import { BottomMobileNav } from "@/components/bottom-mobile-nav"
-import { QueryProvider } from "@/components/providers/query-provider"
-import { Toaster } from "sonner"
-import dynamic from "next/dynamic"
-
-// Force dynamic rendering to avoid SSR context errors
-export const dynamic = 'force-dynamic'
-
-// Load ThemeProvider dynamically to avoid SSR issues
-const ThemeProvider = dynamic(
-  () => import("@/components/theme-provider").then((mod) => mod.ThemeProvider),
-  { ssr: false }
-)
+import { ClientProviders } from "@/components/providers/client-providers"
 
 const unbounded = Unbounded({
   subsets: ["latin"],
@@ -61,19 +50,11 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${unbounded.variable} ${geist.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <QueryProvider>
-            <SiteHeader />
-            <div className="pb-16 md:pb-0">{children}</div>
-            <BottomMobileNav />
-            <Toaster position="top-right" richColors />
-          </QueryProvider>
-        </ThemeProvider>
+        <ClientProviders>
+          <SiteHeader />
+          <div className="pb-16 md:pb-0">{children}</div>
+          <BottomMobileNav />
+        </ClientProviders>
       </body>
     </html>
   )
