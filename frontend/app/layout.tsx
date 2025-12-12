@@ -47,14 +47,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // During static generation, avoid using client providers that might cause issues
+  const isStaticGeneration = typeof window === 'undefined' && process.env.NODE_ENV === 'production'
+  
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${unbounded.variable} ${geist.variable} font-sans antialiased`}>
-        <ClientProviders>
-          <SiteHeader />
-          <div className="pb-16 md:pb-0">{children}</div>
-          <BottomMobileNav />
-        </ClientProviders>
+        {isStaticGeneration ? (
+          // Minimal layout during static generation to avoid build errors
+          <>{children}</>
+        ) : (
+          <ClientProviders>
+            <SiteHeader />
+            <div className="pb-16 md:pb-0">{children}</div>
+            <BottomMobileNav />
+          </ClientProviders>
+        )}
       </body>
     </html>
   )

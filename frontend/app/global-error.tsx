@@ -9,6 +9,9 @@
  * See: https://nextjs.org/docs/app/api-reference/file-conventions/error-handling
  */
 
+// Force dynamic rendering to avoid static generation issues
+export const dynamic = 'force-dynamic'
+
 export default function GlobalError({
   error,
   reset,
