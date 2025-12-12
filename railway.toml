@@ -1,11 +1,13 @@
 # Railway Config as Code
 # This file defines build and deploy settings for all services in the monorepo
 # See: https://docs.railway.com/reference/config-as-code
+# Railway Monorepo Guide: https://docs.railway.com/guides/monorepo
 #
 # IMPORTANT: 
 # 1. Railway matches services by name - your services in Railway Dashboard must be named exactly "backend" and "frontend"
-# 2. Root Directory in Railway Dashboard should be empty (.) or "." for both services
+# 2. Root Directory in Railway Dashboard should be "." (repository root) for both services (monorepo shared)
 # 3. Railway config file path should be empty or "railway.toml" (this file)
+# 4. Watch paths are configured to prevent unnecessary rebuilds when other services change
 
 # Backend service configuration
 [[services]]
@@ -13,12 +15,18 @@ name = "backend"
 
 [services.build]
 builder = "NIXPACKS"
+# Build shared package first, then backend (monorepo shared pattern)
 command = "pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build"
 
 [services.deploy]
-startCommand = "cd backend && pnpm start"
+# Use pnpm --filter for workspace-aware execution (Railway best practice)
+startCommand = "pnpm --filter @ticobot/backend start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
+
+# Watch paths: only rebuild backend when backend or shared changes
+[services.watch]
+paths = ["backend/**", "shared/**"]
 
 # Frontend service configuration
 [[services]]
@@ -26,10 +34,16 @@ name = "frontend"
 
 [services.build]
 builder = "NIXPACKS"
+# Build shared package first, then frontend (monorepo shared pattern)
 command = "pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/frontend build"
 
 [services.deploy]
-startCommand = "cd frontend && pnpm start"
+# Use pnpm --filter for workspace-aware execution (Railway best practice)
+startCommand = "pnpm --filter @ticobot/frontend start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
+
+# Watch paths: only rebuild frontend when frontend or shared changes
+[services.watch]
+paths = ["frontend/**", "shared/**"]
 
