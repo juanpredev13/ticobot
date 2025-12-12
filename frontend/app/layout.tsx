@@ -8,6 +8,9 @@ import { QueryProvider } from "@/components/providers/query-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "sonner"
 
+// Force dynamic rendering to avoid SSR context errors
+export const dynamic = 'force-dynamic'
+
 const unbounded = Unbounded({
   subsets: ["latin"],
   variable: "--font-unbounded",

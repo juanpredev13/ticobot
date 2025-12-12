@@ -3,11 +3,12 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   images: {
     unoptimized: true,
+  },
+  // Disable static generation to avoid SSR context errors
+  experimental: {
+    dynamicIO: true,
   },
   // Explicitly define environment variables for Railway
   env: {
