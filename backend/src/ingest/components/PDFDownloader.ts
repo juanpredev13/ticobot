@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import axios, { AxiosError } from 'axios';
-import type { PDFDocument } from '../types/ingest.types';
+import type { PDFDocument } from '../types/ingest.types.js';
 
 interface DownloadConfig {
     maxConcurrentDownloads: number;
