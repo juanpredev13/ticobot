@@ -1,12 +1,12 @@
 import swaggerJsdoc from 'swagger-jsdoc';
-import { version } from '../../package.json' with { type: 'json' };
+import packageJson from '../../package.json' with { type: 'json' };
 
 const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
       title: 'TicoBot API',
-      version,
+      version: packageJson.version,
       description: 'RESTful API for TicoBot - Costa Rica 2026 Government Plans Analysis Platform',
       contact: {
         name: 'TicoBot',
