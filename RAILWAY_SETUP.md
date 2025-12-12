@@ -127,9 +127,11 @@ The `backend/railway.json` file contains:
 
 Make sure to set all required environment variables in Railway:
 
+### Backend Service Variables
+
 ```bash
 NODE_ENV=production
-PORT=3001
+PORT=3001  # Railway will override this with its own PORT, but set it for clarity
 
 # Supabase
 SUPABASE_URL=https://xxx.supabase.co
@@ -157,9 +159,83 @@ JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
 BCRYPT_ROUNDS=12
 
-# CORS
-FRONTEND_URL=https://ticobot.vercel.app
+# CORS - Set this to your frontend's public URL
+FRONTEND_URL=https://your-frontend-service.railway.app
 ```
+
+### Frontend Service Variables
+
+```bash
+NODE_ENV=production
+# PORT is automatically set by Railway, don't override it
+
+# Backend API URL - CRITICAL for fixing 502 errors
+# Get this from your backend service's public URL in Railway
+# Format: https://your-backend-service.railway.app
+NEXT_PUBLIC_API_URL=https://your-backend-service.railway.app
+
+# Optional
+NEXT_PUBLIC_API_TIMEOUT=30000
+NEXT_PUBLIC_ENABLE_QUERY_DEVTOOLS=false
+```
+
+### How to Get Backend URL in Railway
+
+1. Go to your **backend** service in Railway Dashboard
+2. Click on the **Settings** tab
+3. Scroll down to **Networking** section
+4. Find the **Public Domain** or **Custom Domain**
+5. Copy the URL (e.g., `https://backend-production-xxxx.up.railway.app`)
+6. Set this as `NEXT_PUBLIC_API_URL` in your **frontend** service variables
+
+**Important**: 
+- The backend URL must be the **public URL** (not internal/localhost)
+- If your backend doesn't have a public domain, you need to generate one in Railway
+- The frontend will make requests from the browser, so it needs a publicly accessible URL
+
+## Troubleshooting
+
+### Error 502 Bad Gateway
+
+**Cause**: The frontend cannot connect to the backend because `NEXT_PUBLIC_API_URL` is not configured correctly.
+
+**Symptoms**:
+- Frontend loads but shows 502 errors
+- API requests fail with network errors
+- Browser console shows CORS or connection errors
+
+**Fix**:
+
+1. **Get Backend Public URL**:
+   - Go to Railway Dashboard → Backend Service → Settings
+   - Find **Public Domain** or generate one if it doesn't exist
+   - Copy the URL (e.g., `https://backend-production-xxxx.up.railway.app`)
+
+2. **Configure Frontend**:
+   - Go to Railway Dashboard → Frontend Service → Variables
+   - Add or update `NEXT_PUBLIC_API_URL` with the backend URL from step 1
+   - Make sure there's no trailing slash: `https://backend-production-xxxx.up.railway.app` (not `https://backend-production-xxxx.up.railway.app/`)
+
+3. **Redeploy Frontend**:
+   - After setting the variable, Railway will automatically redeploy
+   - Or manually trigger a redeploy from the Deployments tab
+
+4. **Verify**:
+   - Check that `NEXT_PUBLIC_API_URL` is set correctly in frontend service variables
+   - Verify the backend is running and accessible at the public URL
+   - Check browser console for any remaining errors
+
+**Note**: `NEXT_PUBLIC_*` variables are embedded at build time. If you change them, you need to rebuild/redeploy the frontend.
+
+### Frontend and Backend Using Same Port
+
+**Cause**: Both services are trying to use port 3001.
+
+**Fix**: 
+- Railway automatically assigns ports via the `PORT` environment variable
+- Don't manually set `PORT` in the frontend service
+- Let Railway handle port assignment automatically
+- Next.js will automatically use the `PORT` variable if available
 
 ## Troubleshooting
 

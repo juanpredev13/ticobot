@@ -18,8 +18,15 @@ const logger = new Logger('Server');
 export function createApp(): Express {
     const app = express();
 
+    // CORS configuration
+    const corsOptions = {
+        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        credentials: true,
+        optionsSuccessStatus: 200,
+    };
+    app.use(cors(corsOptions));
+    
     // Middleware
-    app.use(cors());
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 
