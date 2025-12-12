@@ -1,8 +1,8 @@
-import { PDFDownloader } from "./PDFDownloader";
-import { PDFParser } from "./PDFParser";
-import { TextCleaner } from "./TextCleaner";
-import { TextChunker, TextChunk } from "./TextChunker";
-import { ProviderFactory } from "./../../factory/ProviderFactory";
+import { PDFDownloader } from "./PDFDownloader.js";
+import { PDFParser } from "./PDFParser.js";
+import { TextCleaner } from "./TextCleaner.js";
+import { TextChunker, TextChunk } from "./TextChunker.js";
+import { ProviderFactory } from "./../../factory/ProviderFactory.js";
 import { Logger } from "@ticobot/shared";
 import path from "path";
 import fs from "fs/promises";
