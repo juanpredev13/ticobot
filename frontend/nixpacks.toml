@@ -1,0 +1,14 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "pnpm"]
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = [
+  "pnpm --filter @ticobot/shared build",
+  "pnpm --filter @ticobot/frontend build"
+]
+
+[start]
+cmd = "cd frontend && pnpm start"
