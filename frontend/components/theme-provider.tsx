@@ -7,10 +7,5 @@ import {
 } from 'next-themes'
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-  // Suppress hydration warnings during build
-  return (
-    <NextThemesProvider {...props} suppressHydrationWarning>
-      {children}
-    </NextThemesProvider>
-  )
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
 }
