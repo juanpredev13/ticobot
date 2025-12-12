@@ -1,3 +1,6 @@
+// Force dynamic rendering to avoid static generation issues with React Query
+export const dynamic = 'force-dynamic'
+
 export default function NotFound() {
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>

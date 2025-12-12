@@ -139,13 +139,13 @@ function HomeContent() {
         </div>
 
         {partiesLoading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
               <div
                 key={i}
                 className="rounded-lg border border-border bg-card p-6"
-              >
-                <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-muted">
+            >
+              <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-muted">
                   <Loader2 className="size-6 animate-spin text-muted-foreground" />
                 </div>
                 <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
@@ -171,12 +171,12 @@ function HomeContent() {
                   >
                     {party.abbreviation?.charAt(0) || party.name.charAt(0)}
                   </span>
-                </div>
-                <h3 className="mb-2 font-semibold group-hover:text-primary">{party.name}</h3>
-                <p className="text-sm text-muted-foreground">Ver propuestas y documentos</p>
-              </Link>
-            ))}
-          </div>
+              </div>
+              <h3 className="mb-2 font-semibold group-hover:text-primary">{party.name}</h3>
+              <p className="text-sm text-muted-foreground">Ver propuestas y documentos</p>
+            </Link>
+          ))}
+        </div>
         )}
       </section>
 
@@ -204,7 +204,7 @@ function HomeContent() {
             ))}
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {candidates.map((candidate) => {
               // Get party info for this candidate
               const candidateParty = parties.find(p => p.id === candidate.party_id)
@@ -212,11 +212,11 @@ function HomeContent() {
               const partySlug = candidateParty?.slug || ''
               
               return (
-                <Link
-                  key={candidate.id}
+            <Link
+              key={candidate.id}
                   href={`/candidate/${candidate.slug}`}
-                  className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
-                >
+              className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
+            >
                   {candidate.photo_url ? (
                     <div className="relative mb-4 flex size-16 items-center justify-center overflow-hidden rounded-full bg-muted">
                       <img
@@ -235,22 +235,22 @@ function HomeContent() {
                       />
                     </div>
                   ) : (
-                    <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
-                      <span className="text-xl font-bold text-muted-foreground">
-                        {candidate.name.split(" ")[0].charAt(0)}
+              <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
+                <span className="text-xl font-bold text-muted-foreground">
+                  {candidate.name.split(" ")[0].charAt(0)}
                         {candidate.name.split(" ")[1]?.charAt(0) || ''}
-                      </span>
-                    </div>
+                </span>
+              </div>
                   )}
-                  <h3 className="mb-1 font-semibold group-hover:text-primary">{candidate.name}</h3>
+              <h3 className="mb-1 font-semibold group-hover:text-primary">{candidate.name}</h3>
                   {candidateParty && (
                     <p className="mb-2 text-sm font-medium text-primary">{candidateParty.abbreviation || partyName}</p>
                   )}
-                  <p className="text-sm text-muted-foreground">{candidate.position}</p>
-                </Link>
+              <p className="text-sm text-muted-foreground">{candidate.position}</p>
+            </Link>
               )
             })}
-          </div>
+        </div>
         )}
       </section>
 

@@ -20,7 +20,8 @@ export function useUser(enabled = true) {
   return useQuery({
     queryKey: authKeys.user(),
     queryFn: () => authService.me(),
-    enabled,
+    // Disable query during SSR/build to avoid API calls
+    enabled: enabled && typeof window !== 'undefined',
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false, // Don't retry on 401
   });

@@ -28,6 +28,19 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Run build:check to ensure everything builds correctly
 echo ""
-echo "✅ Type-check passed! Proceeding with commit..."
+echo "🔨 Running pnpm build:check..."
+pnpm build:check
+
+# Check exit status
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Build check failed! Please fix build errors before committing."
+  echo "   You can skip this check with: git commit --no-verify"
+  exit 1
+fi
+
+echo ""
+echo "✅ Type-check and build check passed! Proceeding with commit..."
 

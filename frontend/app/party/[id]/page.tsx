@@ -104,13 +104,13 @@ export default function PartyPage({ params }: { params: Promise<{ id: string }> 
               )}
             </div>
             {party.ideology && party.ideology.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {party.ideology.map((ideology) => (
-                  <Badge key={ideology} variant="secondary">
-                    {ideology}
-                  </Badge>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-2">
+              {party.ideology.map((ideology) => (
+                <Badge key={ideology} variant="secondary">
+                  {ideology}
+                </Badge>
+              ))}
+            </div>
             )}
           </div>
         </div>
@@ -118,66 +118,66 @@ export default function PartyPage({ params }: { params: Promise<{ id: string }> 
         {/* Stats Grid */}
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {party.founded_year && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
-                    <Calendar className="size-6 text-primary" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{party.founded_year}</div>
-                    <div className="text-sm text-muted-foreground">Año de fundación</div>
-                  </div>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
+                  <Calendar className="size-6 text-primary" />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                    <div className="text-2xl font-bold">{party.founded_year}</div>
+                  <div className="text-sm text-muted-foreground">Año de fundación</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           )}
           {party.current_representation?.deputies !== undefined && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-12 items-center justify-center rounded-lg bg-teal-500/10">
-                    <Users className="size-6 text-teal-600" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{party.current_representation.deputies}</div>
-                    <div className="text-sm text-muted-foreground">Diputados actuales</div>
-                  </div>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="flex size-12 items-center justify-center rounded-lg bg-teal-500/10">
+                  <Users className="size-6 text-teal-600" />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                    <div className="text-2xl font-bold">{party.current_representation.deputies}</div>
+                  <div className="text-sm text-muted-foreground">Diputados actuales</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           )}
           {party.current_representation?.mayors !== undefined && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-12 items-center justify-center rounded-lg bg-blue-500/10">
-                    <MapPin className="size-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{party.current_representation.mayors}</div>
-                    <div className="text-sm text-muted-foreground">Alcaldías</div>
-                  </div>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="flex size-12 items-center justify-center rounded-lg bg-blue-500/10">
+                  <MapPin className="size-6 text-blue-600" />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                    <div className="text-2xl font-bold">{party.current_representation.mayors}</div>
+                  <div className="text-sm text-muted-foreground">Alcaldías</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           )}
           {party.founded_year && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-12 items-center justify-center rounded-lg bg-amber-500/10">
-                    <Award className="size-6 text-amber-600" />
-                  </div>
-                  <div>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="flex size-12 items-center justify-center rounded-lg bg-amber-500/10">
+                  <Award className="size-6 text-amber-600" />
+                </div>
+                <div>
                     <div className="text-2xl font-bold">
                       {new Date().getFullYear() - party.founded_year}
                     </div>
-                    <div className="text-sm text-muted-foreground">Años de historia</div>
-                  </div>
+                  <div className="text-sm text-muted-foreground">Años de historia</div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
           )}
         </div>
 
@@ -197,13 +197,13 @@ export default function PartyPage({ params }: { params: Promise<{ id: string }> 
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {candidates.map((candidate) => (
-                      <Link
-                        key={candidate.id}
+                <div className="space-y-4">
+                  {candidates.map((candidate) => (
+                    <Link
+                      key={candidate.id}
                         href={`/candidate/${candidate.slug}`}
-                        className="group flex items-center gap-4 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
-                      >
+                      className="group flex items-center gap-4 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
+                    >
                         {candidate.photo_url ? (
                           <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
                             <img
@@ -222,26 +222,26 @@ export default function PartyPage({ params }: { params: Promise<{ id: string }> 
                             />
                           </div>
                         ) : (
-                          <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-muted">
-                            <span className="text-2xl font-bold text-muted-foreground">
-                              {candidate.name.split(" ")[0].charAt(0)}
-                              {candidate.name.split(" ")[1]?.charAt(0)}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <h3 className="font-semibold group-hover:text-primary">{candidate.name}</h3>
-                          <p className="text-sm text-muted-foreground">{candidate.position}</p>
-                        </div>
-                        <ExternalLink className="size-5 text-muted-foreground group-hover:text-primary" />
-                      </Link>
-                    ))}
-                    {candidates.length === 0 && (
-                      <div className="py-8 text-center text-sm text-muted-foreground">
-                        No hay candidatos registrados para este partido
+                      <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-muted">
+                        <span className="text-2xl font-bold text-muted-foreground">
+                          {candidate.name.split(" ")[0].charAt(0)}
+                          {candidate.name.split(" ")[1]?.charAt(0)}
+                        </span>
                       </div>
-                    )}
-                  </div>
+                        )}
+                      <div className="flex-1">
+                        <h3 className="font-semibold group-hover:text-primary">{candidate.name}</h3>
+                        <p className="text-sm text-muted-foreground">{candidate.position}</p>
+                      </div>
+                      <ExternalLink className="size-5 text-muted-foreground group-hover:text-primary" />
+                    </Link>
+                  ))}
+                  {candidates.length === 0 && (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      No hay candidatos registrados para este partido
+                    </div>
+                  )}
+                </div>
                 )}
               </CardContent>
             </Card>
@@ -285,27 +285,27 @@ export default function PartyPage({ params }: { params: Promise<{ id: string }> 
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
                 {party.founded_year && (
-                  <div>
-                    <div className="mb-1 font-medium">Fundación</div>
+                <div>
+                  <div className="mb-1 font-medium">Fundación</div>
                     <div className="text-muted-foreground">{party.founded_year}</div>
-                  </div>
+                </div>
                 )}
                 {party.ideology && party.ideology.length > 0 && (
-                  <div>
-                    <div className="mb-1 font-medium">Ideología</div>
-                    <div className="flex flex-wrap gap-1">
-                      {party.ideology.map((ideology) => (
-                        <Badge key={ideology} variant="secondary" className="text-xs">
-                          {ideology}
-                        </Badge>
-                      ))}
-                    </div>
+                <div>
+                  <div className="mb-1 font-medium">Ideología</div>
+                  <div className="flex flex-wrap gap-1">
+                    {party.ideology.map((ideology) => (
+                      <Badge key={ideology} variant="secondary" className="text-xs">
+                        {ideology}
+                      </Badge>
+                    ))}
                   </div>
+                </div>
                 )}
                 {party.current_representation && (
-                  <div>
-                    <div className="mb-1 font-medium">Representación actual</div>
-                    <div className="text-muted-foreground">
+                <div>
+                  <div className="mb-1 font-medium">Representación actual</div>
+                  <div className="text-muted-foreground">
                       {party.current_representation.deputies} diputados • {party.current_representation.mayors} alcaldías
                     </div>
                   </div>
