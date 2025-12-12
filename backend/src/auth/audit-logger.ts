@@ -13,8 +13,8 @@ import { env } from '../config/env.js';
 import { Request } from 'express';
 
 const supabase = createClient(
-  env.SUPABASE_URL || '',
-  env.SUPABASE_SERVICE_ROLE_KEY || ''
+  env.SUPABASE_URL ?? '',
+  env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 );
 
 export type EventCategory = 'auth' | 'query' | 'admin' | 'security';

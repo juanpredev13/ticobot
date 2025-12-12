@@ -3,7 +3,7 @@
  */
 
 export interface VectorDocument {
-  id: string;
+  id?: string;
   content: string;
   embedding: number[];
   metadata: Record<string, any>;

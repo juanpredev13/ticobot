@@ -167,12 +167,15 @@ router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFun
                 content: source.content,
                 party: source.party,
                 document: source.document,
-                page: null,
+                page: source.pageNumber ||
+                      (source.pageRange ?
+                        `${source.pageRange.start}-${source.pageRange.end}` :
+                        null),
                 relevanceScore: source.relevance || 0
             })),
             metadata: {
                 model: result.metadata.model,
-                tokensUsed: result.metadata.tokensUsed,
+                tokensUsed: result.metadata.tokensUsed || 0,
                 sourcesCount: result.sources.length,
                 processingTime: result.metadata.queryTime
             },
@@ -275,7 +278,10 @@ router.post('/stream', optionalAuth, async (req: Request, res: Response, next: N
                     content: source.content,
                     party: source.party,
                     document: source.document,
-                    page: null,
+                    page: source.pageNumber ||
+                          (source.pageRange ?
+                            `${source.pageRange.start}-${source.pageRange.end}` :
+                            null),
                     relevanceScore: source.relevance || 0
                 }))
             })}\n\n`);
@@ -301,7 +307,7 @@ router.post('/stream', optionalAuth, async (req: Request, res: Response, next: N
                 type: 'done',
                 metadata: {
                     model: result.metadata.model,
-                    tokensUsed: result.metadata.tokensUsed,
+                    tokensUsed: result.metadata.tokensUsed || 0,
                     sourcesCount: result.sources.length,
                     processingTime: result.metadata.queryTime
                 }

@@ -44,11 +44,13 @@ export class RAGPipeline {
     ): Promise<{
         answer: string;
         sources: Array<{
-            id: string;
+            id?: string;
             content: string;
             party: string;
             document: string;
             relevance: number;
+            pageNumber?: number;
+            pageRange?: { start: number; end: number };
         }>;
         confidence: number;
         metadata: {
