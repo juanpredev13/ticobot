@@ -43,6 +43,12 @@ The repository has a `railway.toml` file that defines both services:
 - Ensure Root Directory is empty (.) for both services
 - Try disabling Config as Code temporarily to use manual configuration
 
+**If Railway doesn't auto-deploy after changes to `railway.toml`**:
+- Railway may not always detect changes to `railway.toml` automatically
+- Go to Railway Dashboard → Frontend Service → Deployments
+- Click **"Redeploy"** or **"Deploy Latest"** to trigger a manual deployment
+- Alternatively, make a small change to trigger auto-deploy (e.g., add a comment to `railway.toml`)
+
 ### Option 2: Use Individual railway.json Files
 
 If you prefer individual configuration files:
