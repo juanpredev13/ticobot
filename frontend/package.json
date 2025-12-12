@@ -12,7 +12,7 @@
     "dev": "next dev",
     "lint": "echo '⚠️  Skipping frontend lint (Next.js 16)' && exit 0",
     "type-check": "tsc --noEmit",
-    "start": "next start -H 0.0.0.0"
+    "start": "node server.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
