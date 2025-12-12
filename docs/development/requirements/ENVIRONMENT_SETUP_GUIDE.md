@@ -218,8 +218,11 @@ NEXT_PUBLIC_ANALYTICS_ID=G-xxx
 4. Select "Deploy from GitHub repo"
 5. Choose your `ticobot` repository
 6. Configure:
-   - **Root Directory**: `backend/`
-   - **Start Command**: `pnpm start`
+   - **Root Directory**: `.` (root of the repository, NOT `backend/`)
+   - **Build Command**: `pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build`
+   - **Start Command**: `cd backend && pnpm start`
+   
+   **Important**: The Root Directory must be the repository root (`.`) because the backend depends on `@ticobot/shared` which is part of the pnpm workspace. Railway will automatically detect `backend/railway.json` if present.
 7. Add Environment Variables (copy from backend/.env.production):
    ```
    NODE_ENV = production
