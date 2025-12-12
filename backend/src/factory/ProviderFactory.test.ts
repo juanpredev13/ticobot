@@ -1,5 +1,26 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ProviderFactory } from './ProviderFactory.js';
+import { env } from '../config/env.js';
+
+/**
+ * Check if required API keys are available for testing
+ */
+function hasRequiredApiKeys(): boolean {
+  // Check for LLM provider keys
+  if (env.LLM_PROVIDER === 'openai' && !env.OPENAI_API_KEY) {
+    return false;
+  }
+  if (env.LLM_PROVIDER === 'deepseek' && !env.DEEPSEEK_API_KEY) {
+    return false;
+  }
+
+  // Check for embedding provider keys
+  if (env.EMBEDDING_PROVIDER === 'openai' && !env.OPENAI_API_KEY) {
+    return false;
+  }
+
+  return true;
+}
 
 describe('ProviderFactory', () => {
   beforeEach(() => {
@@ -8,14 +29,14 @@ describe('ProviderFactory', () => {
   });
 
   describe('Singleton pattern', () => {
-    it('should return same instance on subsequent calls', async () => {
+    it.skipIf(!hasRequiredApiKeys())('should return same instance on subsequent calls', async () => {
       const provider1 = await ProviderFactory.getLLMProvider();
       const provider2 = await ProviderFactory.getLLMProvider();
 
       expect(provider1).toBe(provider2);
     });
 
-    it('should return new instance after reset', async () => {
+    it.skipIf(!hasRequiredApiKeys())('should return new instance after reset', async () => {
       const provider1 = await ProviderFactory.getLLMProvider();
       ProviderFactory.resetInstances();
       const provider2 = await ProviderFactory.getLLMProvider();
@@ -25,7 +46,7 @@ describe('ProviderFactory', () => {
   });
 
   describe('Provider initialization', () => {
-    it('should initialize LLM provider based on env', async () => {
+    it.skipIf(!hasRequiredApiKeys())('should initialize LLM provider based on env', async () => {
       const provider = await ProviderFactory.getLLMProvider();
 
       expect(provider).toBeDefined();
@@ -34,7 +55,7 @@ describe('ProviderFactory', () => {
       expect(provider.supportsFunctionCalling).toBeDefined();
     });
 
-    it('should initialize embedding provider based on env', async () => {
+    it.skipIf(!hasRequiredApiKeys())('should initialize embedding provider based on env', async () => {
       const provider = await ProviderFactory.getEmbeddingProvider();
 
       expect(provider).toBeDefined();
@@ -54,7 +75,7 @@ describe('ProviderFactory', () => {
   });
 
   describe('Provider interface compliance', () => {
-    it('LLM provider should implement ILLMProvider interface', async () => {
+    it.skipIf(!hasRequiredApiKeys())('LLM provider should implement ILLMProvider interface', async () => {
       const llm = await ProviderFactory.getLLMProvider();
 
       // Check all required methods exist
@@ -70,7 +91,7 @@ describe('ProviderFactory', () => {
       expect(typeof llm.supportsFunctionCalling()).toBe('boolean');
     });
 
-    it('Embedding provider should implement IEmbeddingProvider interface', async () => {
+    it.skipIf(!hasRequiredApiKeys())('Embedding provider should implement IEmbeddingProvider interface', async () => {
       const embedding = await ProviderFactory.getEmbeddingProvider();
 
       // Check all required methods exist

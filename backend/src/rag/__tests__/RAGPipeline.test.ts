@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { RAGPipeline } from '../components/RAGPipeline.js';
+import { env } from '../../config/env.js';
 
 /**
  * RAGPipeline Integration Tests
@@ -12,7 +13,32 @@ import { RAGPipeline } from '../components/RAGPipeline.js';
  * - Network connectivity to LLM/embedding providers
  */
 
-describe('RAGPipeline Integration Tests', () => {
+/**
+ * Check if required API keys are available for testing
+ */
+function hasRequiredApiKeys(): boolean {
+  // Check for LLM provider keys
+  if (env.LLM_PROVIDER === 'openai' && !env.OPENAI_API_KEY) {
+    return false;
+  }
+  if (env.LLM_PROVIDER === 'deepseek' && !env.DEEPSEEK_API_KEY) {
+    return false;
+  }
+
+  // Check for embedding provider keys
+  if (env.EMBEDDING_PROVIDER === 'openai' && !env.OPENAI_API_KEY) {
+    return false;
+  }
+
+  // Check for Supabase (vector store)
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return false;
+  }
+
+  return true;
+}
+
+describe.skipIf(!hasRequiredApiKeys())('RAGPipeline Integration Tests', () => {
     let pipeline: RAGPipeline;
 
     beforeAll(() => {
@@ -150,7 +176,7 @@ describe('RAGPipeline Integration Tests', () => {
     }, 30000);
 });
 
-describe('RAGPipeline Streaming Tests', () => {
+describe.skipIf(!hasRequiredApiKeys())('RAGPipeline Streaming Tests', () => {
     let pipeline: RAGPipeline;
 
     beforeAll(() => {
