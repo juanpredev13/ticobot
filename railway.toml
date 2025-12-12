@@ -1,0 +1,35 @@
+# Railway Config as Code
+# This file defines build and deploy settings for all services in the monorepo
+# See: https://docs.railway.com/reference/config-as-code
+#
+# IMPORTANT: 
+# 1. Railway matches services by name - your services in Railway Dashboard must be named exactly "backend" and "frontend"
+# 2. Root Directory in Railway Dashboard should be empty (.) or "." for both services
+# 3. Railway config file path should be empty or "railway.toml" (this file)
+
+# Backend service configuration
+[[services]]
+name = "backend"
+
+[services.build]
+builder = "NIXPACKS"
+command = "pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build"
+
+[services.deploy]
+startCommand = "cd backend && pnpm start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# Frontend service configuration
+[[services]]
+name = "frontend"
+
+[services.build]
+builder = "NIXPACKS"
+command = "pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/frontend build"
+
+[services.deploy]
+startCommand = "cd frontend && pnpm start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+

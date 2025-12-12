@@ -8,14 +8,51 @@ Both backend and frontend depend on `@ticobot/shared` which is a workspace packa
 
 ## Solution
 
-### Configuration for Both Services
+### Important: Config as Code Priority
 
-Each service has its own `railway.json` file that Railway will automatically detect:
+Railway uses **Config as Code** which means:
+- If `railway.toml` exists in the repository root, it has **priority** over individual `railway.json` files
+- The `railway.toml` file matches services by **name** - your services in Railway Dashboard must be named exactly `backend` and `frontend`
+- If you prefer to use individual `railway.json` files, you should **remove** the `railway.toml` file
+
+### Option 1: Use railway.toml (Config as Code) - Recommended
+
+The repository has a `railway.toml` file that defines both services:
+
+- **Backend Service**: Must be named `backend` in Railway Dashboard
+- **Frontend Service**: Must be named `frontend` in Railway Dashboard
+
+**Configuration Steps**:
+
+1. **For each service in Railway Dashboard**:
+   - Go to **Settings** → **Config-as-code** section
+   - **Railway config file path**: Leave **empty** or set to `railway.toml`
+   - This tells Railway to use the `railway.toml` file from the repository root
+
+2. **Root Directory** (in **Source** section):
+   - Should be **empty** or `.` (repository root) for both services
+   - **Important**: Do NOT set it to `backend/` or `frontend/`
+
+3. **Service Names**:
+   - Service names in Railway Dashboard must match exactly: `backend` and `frontend`
+   - Railway matches services by name from the `railway.toml` file
+
+**If commands are being mixed up**:
+- Verify service names match exactly: `backend` and `frontend` (case-sensitive)
+- Check that "Railway config file path" is empty or `railway.toml`
+- Ensure Root Directory is empty (.) for both services
+- Try disabling Config as Code temporarily to use manual configuration
+
+### Option 2: Use Individual railway.json Files
+
+If you prefer individual configuration files:
 
 - **Backend Service**: Uses `backend/railway.json`
 - **Frontend Service**: Uses `frontend/railway.json`
 
-**Important**: Make sure the Root Directory is set to `.` (repository root) for both services so Railway can find the workspace packages.
+**Important**: 
+- You must **remove** the `railway.toml` file from the repository root
+- Root Directory should be **empty** or `.` (repository root) for both services
 
 **Steps for each service:**
 
