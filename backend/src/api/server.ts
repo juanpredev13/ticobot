@@ -18,30 +18,14 @@ const logger = new Logger('Server');
 export function createApp(): Express {
     const app = express();
 
-    // CORS configuration - Enhanced for Railway deployment
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // CORS configuration - Supports both CLIENT_URL and FRONTEND_URL for compatibility
+    const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
     const corsOptions = {
-        origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-            // Allow requests with no origin (like mobile apps, Postman, or curl)
-            if (!origin) {
-                return callback(null, true);
-            }
-            // Allow requests from frontend URL
-            if (origin === frontendUrl) {
-                return callback(null, true);
-            }
-            // In development, allow localhost
-            if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
-                return callback(null, true);
-            }
-            // Reject other origins
-            callback(new Error('Not allowed by CORS'));
-        },
+        origin: clientUrl, // Frontend URL
         credentials: true,
         optionsSuccessStatus: 200,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-        exposedHeaders: ['Content-Length', 'X-Request-Id'],
     };
     app.use(cors(corsOptions));
     
