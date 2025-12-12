@@ -243,6 +243,52 @@ NEXT_PUBLIC_ENABLE_QUERY_DEVTOOLS=false
    - Verifica que el build se complete sin errores
    - Revisa si hay errores en el código que se ejecutan al iniciar
 
+### Error 502 Bad Gateway con x-railway-fallback: true
+
+**Síntomas**:
+- El contenedor está corriendo (según los logs)
+- Next.js muestra "Ready in XXXms"
+- Pero las requests devuelven 502 Bad Gateway
+- Headers de respuesta incluyen: `x-railway-fallback: true`
+
+**Causas posibles**:
+
+1. **Railway no puede alcanzar el servicio**:
+   - El servicio está corriendo pero Railway no puede hacer health checks
+   - Puede ser un problema de timing (Railway hace health checks muy pronto)
+   - O el servicio no está respondiendo en el puerto correcto
+
+2. **Next.js no está usando el puerto correcto**:
+   - Aunque Next.js debería detectar `PORT` automáticamente, puede haber un problema
+   - Verifica que Next.js esté escuchando en el puerto que Railway espera
+
+3. **Problema con el health check de Railway**:
+   - Railway puede estar haciendo health checks en una ruta que no existe
+   - O el health check está fallando
+
+**Solución**:
+
+1. **Verifica que Next.js esté escuchando en el puerto correcto**:
+   - Revisa los logs: debería mostrar `- Network: http://0.0.0.0:PORT`
+   - El PORT debe coincidir con el que Railway asignó
+
+2. **Verifica que el servicio esté accesible**:
+   - Intenta hacer una request directa al puerto interno (si tienes acceso)
+   - O verifica los logs para ver si hay requests entrantes
+
+3. **Espera unos segundos después del deploy**:
+   - A veces Railway necesita unos segundos para detectar que el servicio está listo
+   - Intenta acceder después de 30-60 segundos del deploy
+
+4. **Verifica la configuración de Railway**:
+   - Asegúrate de que el servicio tenga un dominio público configurado
+   - Verifica que no haya problemas de red en Railway
+
+5. **Si el problema persiste**:
+   - Intenta hacer un redeploy completo
+   - Verifica los logs completos para ver si hay errores
+   - Considera contactar el soporte de Railway si el problema persiste
+
 ### Error 502 Bad Gateway
 
 **Cause**: The frontend cannot connect to the backend because `NEXT_PUBLIC_API_URL` is not configured correctly.
