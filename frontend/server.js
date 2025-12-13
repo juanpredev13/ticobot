@@ -20,7 +20,7 @@ console.log('==========================================');
 
 // Start Next.js with explicit port and host
 // Use npx to ensure next is found in node_modules/.bin
-const nextProcess = spawn('npx', ['next', 'start', '-H', '0.0.0.0', '-p', PORT], {
+const nextProcess = spawn('npx', ['next', 'start', '-H', '0.0.0.0', '--port', PORT], {
   stdio: 'inherit',
   shell: true,
   cwd: __dirname, // Ensure we're in the frontend directory
@@ -36,6 +36,10 @@ nextProcess.on('error', (error) => {
 });
 
 nextProcess.on('exit', (code) => {
-  process.exit(code || 0);
+  if (code !== 0) {
+    console.error(`Next.js process exited with code ${code}`);
+    process.exit(code || 1);
+  }
+  process.exit(0);
 });
 
