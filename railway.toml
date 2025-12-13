@@ -18,7 +18,7 @@ builder = "NIXPACKS"
 # Build shared package first, then backend (monorepo shared pattern)
 # Include devDependencies needed for build (TypeScript, etc.)
 # The warning about --production is harmless, but we need devDeps for the build
-command = "pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build"
+command = "NPM_CONFIG_PRODUCTION=false pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build"
 
 [services.deploy]
 # Use pnpm --filter for workspace-aware execution (Railway best practice)
@@ -39,7 +39,7 @@ builder = "NIXPACKS"
 # Build shared package first, then frontend (monorepo shared pattern)
 # Include devDependencies needed for build (TypeScript, etc.)
 # The warning about --production is harmless, but we need devDeps for the build
-command = "pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/frontend build"
+command = "NPM_CONFIG_PRODUCTION=false pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/frontend build"
 
 [services.deploy]
 # Use pnpm --filter for workspace-aware execution (Railway best practice)
