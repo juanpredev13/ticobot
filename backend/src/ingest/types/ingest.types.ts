@@ -24,6 +24,17 @@ export interface PDFDocument {
     section?: string;
     tokens?: number;
     characterCount: number;
+    // Quality scoring (Issue #33)
+    qualityScore?: number;
+    qualityMetrics?: {
+      lengthScore: number;
+      specialCharRatio: number;
+      hasKeywords: boolean;
+      readability: number;
+    };
+    // Keyword extraction (Issue #32)
+    keywords?: string[];
+    entities?: string[];
   }
   
   export interface IngestResult {

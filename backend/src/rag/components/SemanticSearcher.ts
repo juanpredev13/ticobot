@@ -83,6 +83,94 @@ export class SemanticSearcher {
     }
 
     /**
+     * Search with quality filtering (Issue #33)
+     * Filters out low-quality chunks based on quality score
+     * @param embedding - Query embedding vector
+     * @param topK - Number of results to return
+     * @param minQualityScore - Minimum quality score (0-1, default: 0.5)
+     * @param filters - Optional metadata filters
+     * @returns Filtered array of high-quality results
+     */
+    async searchWithQualityFilter(
+        embedding: number[],
+        topK: number = 5,
+        minQualityScore: number = 0.5,
+        filters?: Record<string, any>
+    ): Promise<SearchResult[]> {
+        this.logger.info(`Searching with minimum quality score: ${minQualityScore}`);
+
+        // Fetch more results to account for filtering
+        const results = await this.search(embedding, topK * 2, filters);
+
+        // Filter by quality score
+        const filtered = results.filter(r => {
+            const qualityScore = r.document.metadata?.qualityScore as number | undefined;
+            return (qualityScore ?? 1.0) >= minQualityScore;
+        });
+
+        // Limit to topK after filtering
+        const limited = filtered.slice(0, topK);
+
+        if (filtered.length < results.length) {
+            this.logger.info(
+                `Filtered ${results.length - filtered.length} low-quality chunks ` +
+                `(below ${minQualityScore} quality score)`
+            );
+        }
+
+        return limited;
+    }
+
+    /**
+     * Search with both relevance and quality filtering (Issues #32, #33)
+     * Combines similarity score filtering with quality score filtering
+     * @param embedding - Query embedding vector
+     * @param topK - Number of results to return
+     * @param minRelevanceScore - Minimum similarity score (0-1, default: 0.7)
+     * @param minQualityScore - Minimum quality score (0-1, default: 0.5)
+     * @param filters - Optional metadata filters
+     * @returns Filtered array of high-quality, relevant results
+     */
+    async searchWithCombinedFilters(
+        embedding: number[],
+        topK: number = 5,
+        minRelevanceScore: number = 0.7,
+        minQualityScore: number = 0.5,
+        filters?: Record<string, any>
+    ): Promise<SearchResult[]> {
+        this.logger.info(
+            `Searching with filters - Relevance: ${minRelevanceScore}, Quality: ${minQualityScore}`
+        );
+
+        // Fetch more results to account for filtering
+        const results = await this.search(embedding, topK * 3, filters);
+
+        // Apply both filters
+        const filtered = results.filter(r => {
+            const relevanceScore = r.score ?? 0;
+            const qualityScore = r.document.metadata?.qualityScore as number | undefined ?? 1.0;
+
+            return relevanceScore >= minRelevanceScore && qualityScore >= minQualityScore;
+        });
+
+        // Limit to topK after filtering
+        const limited = filtered.slice(0, topK);
+
+        const removedByRelevance = results.filter(r => (r.score ?? 0) < minRelevanceScore).length;
+        const removedByQuality = results.filter(r => {
+            const qualityScore = r.document.metadata?.qualityScore as number | undefined ?? 1.0;
+            return qualityScore < minQualityScore;
+        }).length;
+
+        this.logger.info(
+            `Filtered ${results.length - filtered.length} results ` +
+            `(${removedByRelevance} low relevance, ${removedByQuality} low quality)`
+        );
+
+        return limited;
+    }
+
+    /**
      * Search across multiple parties and merge results
      * @param embedding - Query embedding vector
      * @param partyIds - Array of party IDs to search
