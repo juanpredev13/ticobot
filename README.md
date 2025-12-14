@@ -30,9 +30,10 @@ TicoBot enables citizens to:
 - 🤖 **Multi-LLM Support**: Switch between OpenAI, Claude, Gemini, and local Ollama models
 - 🔍 **Semantic Search**: Find relevant content across all government plans
 - 💬 **RAG-powered Chat**: Interactive Q&A with context from official documents
-- 📊 **Comparison Tools**: Compare proposals across political parties
+- 📊 **Proposal Comparator**: Compare party proposals side-by-side on specific topics with automatic state classification
 - 🔄 **Modular Architecture**: Swap providers without changing business logic
 - 📈 **Admin Dashboard**: Monitor system status and manage data
+- ⚡ **Smart Caching**: Comparison results cached for faster subsequent requests
 
 ## Tech Stack
 

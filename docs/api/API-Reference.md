@@ -371,6 +371,95 @@ data: {"type":"done","metadata":{...}}
 
 ---
 
+## Comparison
+
+### Compare Party Proposals
+
+#### POST /api/compare
+
+Compare proposals from multiple political parties on a specific topic using RAG. Returns side-by-side comparisons with proposal states and source citations.
+
+**Request Body:**
+```json
+{
+  "topic": "Seguridad",              // Required: Topic to compare
+  "partyIds": ["pln", "pusc"],       // Required: Array of party slugs (1-4 parties)
+  "topKPerParty": 5,                 // Optional: Top K chunks per party (default: 5, max: 10)
+  "temperature": 0.7                  // Optional: LLM temperature (default: 0.7, range: 0-2)
+}
+```
+
+**Example Request:**
+```bash
+curl -X POST http://localhost:3001/api/compare \
+  -H "Content-Type: application/json" \
+  -d '{
+    "topic": "Seguridad",
+    "partyIds": ["pln", "pusc", "frente-amplio"],
+    "topKPerParty": 5,
+    "temperature": 0.7
+  }'
+```
+
+**Response:**
+```json
+{
+  "topic": "Seguridad",
+  "comparisons": [
+    {
+      "party": {
+        "id": "uuid",
+        "name": "Partido Liberación Nacional",
+        "slug": "pln",
+        "abbreviation": "PLN",
+        "colors": {
+          "primary": "#1E88E5",
+          "secondary": "#1565C0"
+        }
+      },
+      "answer": "El PLN propone fortalecer la seguridad ciudadana mediante...",
+      "state": "completa",
+      "stateLabel": "Completa",
+      "confidence": 0.85,
+      "sources": [
+        {
+          "content": "Nuestra propuesta de seguridad incluye...",
+          "relevance": 0.452,
+          "pageNumber": 12,
+          "pageRange": "12-13",
+          "documentId": "doc-uuid",
+          "chunkId": "chunk-uuid"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "totalParties": 3,
+    "timestamp": "2025-01-15T12:00:00.000Z",
+    "cached": false,
+    "processingTime": 35234
+  }
+}
+```
+
+**Proposal States:**
+- `completa`: Party has a complete and clear proposal
+- `parcial`: Party has some information but proposal is incomplete
+- `poco_clara`: Proposal exists but is unclear or vague
+- `sin_informacion`: No relevant information found
+
+**Caching:**
+- Results are automatically cached for 7 days
+- Subsequent requests with same topic and parties return cached results
+- Cache significantly reduces processing time (~30-40 seconds saved)
+
+**Error Responses:**
+- `400`: Validation error (missing topic, invalid party IDs, too many parties)
+- `404`: One or more parties not found
+- `500`: Server error (RAG pipeline failure, LLM error)
+
+---
+
 ## Error Responses
 
 All endpoints return consistent error responses:
@@ -450,6 +539,16 @@ curl -X POST http://localhost:3000/api/chat \
   }'
 ```
 
+4. **Compare party proposals:**
+```bash
+curl -X POST http://localhost:3001/api/compare \
+  -H "Content-Type: application/json" \
+  -d '{
+    "topic": "Seguridad",
+    "partyIds": ["pln", "pusc", "frente-amplio"]
+  }'
+```
+
 ---
 
 ## Development
@@ -474,6 +573,12 @@ OPENAI_API_KEY=your-key
 ---
 
 ## Version History
+
+### v0.2.0 (2025-01-15)
+- Proposal Comparator endpoint (`/api/compare`)
+- Comparison caching mechanism
+- Proposal state classification
+- Source tracking with page numbers
 
 ### v0.1.0 (2025-12-04)
 - Initial API implementation
