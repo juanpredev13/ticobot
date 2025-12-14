@@ -78,7 +78,7 @@ USING gin(search_vector);
 -- Step 6: Create hybrid search function
 -- Combines vector similarity (semantic) with keyword matching (lexical)
 CREATE OR REPLACE FUNCTION hybrid_search(
-  query_embedding vector(1536),
+  query_embedding extensions.vector(1536),
   query_text text,
   match_count int DEFAULT 5,
   vector_weight float DEFAULT 0.7,
@@ -153,7 +153,7 @@ $$;
 
 -- Step 7: Create simplified hybrid search (for backwards compatibility)
 CREATE OR REPLACE FUNCTION hybrid_search_simple(
-  query_embedding vector(1536),
+  query_embedding extensions.vector(1536),
   query_text text,
   match_count int DEFAULT 5
 )
