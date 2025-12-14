@@ -64,6 +64,11 @@ export const partyKeys = {
   candidates: (partyId: string) => [...partyKeys.detail(partyId), 'candidates'] as const,
 };
 
+export const compareKeys = {
+  all: ['compare'] as const,
+  compare: (params: { topic: string; partyIds: string[] }) => [...compareKeys.all, params] as const,
+};
+
 /**
  * Candidates-related query keys
  */
@@ -97,4 +102,5 @@ export const queryKeys = {
   health: healthKeys,
   parties: partyKeys,
   candidates: candidateKeys,
+  compare: compareKeys,
 };

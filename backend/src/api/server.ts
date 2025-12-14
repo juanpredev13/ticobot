@@ -1,8 +1,8 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 import { Logger } from '@ticobot/shared';
 import { swaggerSpec } from './swagger.js';
 import authRoutes from './routes/auth.js';
@@ -12,6 +12,7 @@ import searchRoutes from './routes/search.js';
 import chatRoutes from './routes/chat.js';
 import partiesRoutes from './routes/parties.js';
 import candidatesRoutes from './routes/candidates.js';
+import compareRoutes from './routes/compare.js';
 
 const logger = new Logger('Server');
 
@@ -20,8 +21,32 @@ export function createApp(): Express {
 
     // CORS configuration - Supports both CLIENT_URL and FRONTEND_URL for compatibility
     const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
+    
+    // In development, allow localhost on any port
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const allowedOrigins = isDevelopment
+        ? [
+            clientUrl,
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:3001',
+          ]
+        : [clientUrl];
+    
     const corsOptions = {
-        origin: clientUrl, // Frontend URL
+        origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+            // Allow requests with no origin (like mobile apps, Postman, etc.) in development
+            if (isDevelopment && !origin) {
+                return callback(null, true);
+            }
+            
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         credentials: true,
         optionsSuccessStatus: 200,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -59,6 +84,7 @@ export function createApp(): Express {
     app.use('/api/chat', chatRoutes);
     app.use('/api/parties', partiesRoutes);
     app.use('/api/candidates', candidatesRoutes);
+    app.use('/api/compare', compareRoutes);
 
     // Health check
     app.get('/health', (req: Request, res: Response) => {
@@ -112,6 +138,9 @@ export function createApp(): Express {
                     list: 'GET /api/candidates',
                     getById: 'GET /api/candidates/:id',
                     getBySlug: 'GET /api/candidates/slug/:slug'
+                },
+                compare: {
+                    compare: 'POST /api/compare'
                 }
             },
             documentation: '/api/docs'
@@ -155,6 +184,7 @@ export function startServer(port: number = 3000): void {
         logger.info(`   Ingest: http://localhost:${port}/api/ingest`);
         logger.info(`   Parties: http://localhost:${port}/api/parties`);
         logger.info(`   Candidates: http://localhost:${port}/api/candidates`);
+        logger.info(`   Compare: http://localhost:${port}/api/compare`);
     });
 
     // Configure Keep-Alive timeout for Railway compatibility
@@ -169,6 +199,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-    const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+    const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 3000;
     startServer(port);
 }

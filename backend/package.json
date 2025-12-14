@@ -12,6 +12,7 @@
     "start:server": "tsx src/api/server.ts",
     "test:ingestion": "tsx src/scripts/testIngestion.ts",
     "admin:create": "tsx scripts/create-admin.ts",
+    "precompute:comparisons": "tsx scripts/precompute-comparisons.ts",
     "build": "tsc --build",
     "test": "vitest --passWithNoTests",
     "test:ui": "vitest --ui",
