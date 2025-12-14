@@ -1,89 +1,100 @@
 "use client"
 
-import { useState } from "react"
-import { Search, X, FileText, ExternalLink, Plus } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { Search, X, FileText, ExternalLink, Plus, Loader2, AlertCircle, CheckCircle2, AlertTriangle, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useCompareProposals, useParties } from "@/lib/hooks"
+import { ProposalState } from "@/lib/api/services/compare"
 import Link from "next/link"
-
-const PARTIES = [
-  { id: "pln", name: "Partido Liberación Nacional", abbr: "PLN" },
-  { id: "pusc", name: "Partido Unidad Social Cristiana", abbr: "PUSC" },
-  { id: "pac", name: "Partido Acción Ciudadana", abbr: "PAC" },
-  { id: "fa", name: "Frente Amplio", abbr: "FA" },
-  { id: "prn", name: "Restauración Nacional", abbr: "PRN" },
-  { id: "plp", name: "Liberal Progresista", abbr: "PLP" },
-  { id: "pnr", name: "Nueva República", abbr: "PNR" },
-  { id: "pin", name: "Partido Integración Nacional", abbr: "PIN" },
-]
 
 const TOPICS = ["Educación", "Salud", "Empleo", "Seguridad", "Ambiente", "Economía", "Infraestructura", "Corrupción"]
 
-// Mock data for demonstration
-const MOCK_PROPOSALS = {
-  Educación: {
-    pln: {
-      summary: "Propuesta de reforma educativa integral con énfasis en tecnología y bilingüismo.",
-      points: [
-        "Implementación de tecnología en todas las aulas para 2026",
-        "Programa nacional de inglés desde preescolar",
-        "Aumento del presupuesto educativo al 8% del PIB",
-      ],
-      source: "Plan de Gobierno 2024-2028, página 45-52",
-      documentUrl: "#",
-    },
-    pac: {
-      summary: "Enfoque en educación pública de calidad y acceso universal.",
-      points: [
-        "Fortalecimiento de la educación pública gratuita",
-        "Capacitación continua para docentes",
-        "Infraestructura educativa en zonas rurales",
-      ],
-      source: "Propuesta Electoral 2024, sección 3.1",
-      documentUrl: "#",
-    },
-    fa: {
-      summary: "Transformación del sistema educativo hacia la equidad social.",
-      points: [
-        "Eliminación de las pruebas estandarizadas",
-        "Educación sexual integral obligatoria",
-        "Becas universales para estudiantes de bajos recursos",
-      ],
-      source: "Programa Político 2024-2028, capítulo 2",
-      documentUrl: "#",
-    },
-  },
-  Salud: {
-    pln: {
-      summary: "Modernización del sistema de salud con enfoque preventivo.",
-      points: [
-        "Digitalización completa del expediente médico",
-        "Reducción de tiempos de espera en 50%",
-        "Programas de prevención de enfermedades crónicas",
-      ],
-      source: "Plan de Gobierno 2024-2028, página 78-85",
-      documentUrl: "#",
-    },
-    pac: {
-      summary: "Fortalecimiento de la CCSS y atención primaria.",
-      points: [
-        "Aumento de presupuesto para la CCSS",
-        "Más centros de atención primaria",
-        "Contratación de 2000 profesionales de salud",
-      ],
-      source: "Propuesta Electoral 2024, sección 4.2",
-      documentUrl: "#",
-    },
-  },
+/**
+ * Get icon for proposal state
+ */
+function getStateIcon(state: ProposalState) {
+  switch (state) {
+    case ProposalState.COMPLETA:
+      return <CheckCircle2 className="size-4 text-green-600" />
+    case ProposalState.PARCIAL:
+      return <AlertCircle className="size-4 text-yellow-600" />
+    case ProposalState.POCO_CLARA:
+      return <AlertTriangle className="size-4 text-orange-600" />
+    case ProposalState.SIN_INFORMACION:
+      return <HelpCircle className="size-4 text-gray-400" />
+    default:
+      return <HelpCircle className="size-4 text-gray-400" />
+  }
+}
+
+/**
+ * Get badge variant for proposal state
+ */
+function getStateBadgeVariant(state: ProposalState): "default" | "secondary" | "destructive" | "outline" {
+  switch (state) {
+    case ProposalState.COMPLETA:
+      return "default"
+    case ProposalState.PARCIAL:
+      return "secondary"
+    case ProposalState.POCO_CLARA:
+      return "outline"
+    case ProposalState.SIN_INFORMACION:
+      return "outline"
+    default:
+      return "outline"
+  }
 }
 
 export default function ComparePage() {
-  const [selectedParties, setSelectedParties] = useState<string[]>(["pln", "pac"])
-  const [selectedTopic, setSelectedTopic] = useState<string>("Educación")
+  const [selectedParties, setSelectedParties] = useState<string[]>([])
+  const [selectedTopic, setSelectedTopic] = useState<string>("")
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const [customTopic, setCustomTopic] = useState<string>("")
+
+  // Fetch parties list
+  const { data: partiesData, isLoading: partiesLoading } = useParties()
+  const parties = partiesData?.parties || []
+
+  // Compare mutation
+  const compareMutation = useCompareProposals()
+
+  // Track if component is mounted to avoid hydration issues
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Initialize with first two parties if available
+  useEffect(() => {
+    if (isMounted && parties.length > 0 && selectedParties.length === 0) {
+      const firstTwo = parties.slice(0, 2).map(p => p.slug)
+      setSelectedParties(firstTwo)
+    }
+  }, [isMounted, parties, selectedParties.length])
+
+  // Auto-compare when topic or parties change
+  useEffect(() => {
+    if (isMounted && selectedParties.length > 0 && (selectedTopic || customTopic)) {
+      const topic = customTopic || selectedTopic
+      handleCompare(topic)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted, selectedParties, selectedTopic])
+
+  const handleCompare = async (topic: string) => {
+    if (!topic || selectedParties.length === 0) return
+
+    compareMutation.mutate({
+      topic,
+      partyIds: selectedParties,
+      topKPerParty: 3,
+    })
+  }
 
   const addParty = (partyId: string) => {
     if (selectedParties.length < 4 && !selectedParties.includes(partyId)) {
@@ -97,12 +108,30 @@ export default function ComparePage() {
     }
   }
 
-  const availableParties = PARTIES.filter((p) => !selectedParties.includes(p.id))
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      setCustomTopic(searchQuery)
+      setSelectedTopic("")
+      handleCompare(searchQuery)
+    }
+  }
+
+  const handleTopicSelect = (topic: string) => {
+    setSelectedTopic(topic)
+    setCustomTopic("")
+    setSearchQuery("")
+  }
+
+  const availableParties = useMemo(() => 
+    parties.filter((p) => !selectedParties.includes(p.slug)),
+    [parties, selectedParties]
+  )
+  const comparisonData = compareMutation.data
+  const isLoading = (compareMutation.isPending || partiesLoading) && isMounted
+  const hasError = compareMutation.isError
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-0">
-      {/* Header */}
-
       <div className="container mx-auto px-4 py-8">
         {/* Page Title */}
         <div className="mb-8">
@@ -117,15 +146,28 @@ export default function ComparePage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar tema o palabra clave..."
+                placeholder="Buscar tema o palabra clave (ej: educación superior, salud mental, empleo juvenil)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch()
+                  }
+                }}
                 className="pl-10"
               />
             </div>
-            <Select value={selectedTopic} onValueChange={setSelectedTopic}>
+            <Button onClick={handleSearch} disabled={!searchQuery.trim() || isLoading}>
+              {isLoading && isMounted ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Search className="mr-2 size-4" />
+              )}
+              Buscar
+            </Button>
+            <Select value={selectedTopic} onValueChange={handleTopicSelect}>
               <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Seleccionar tema" />
+                <SelectValue placeholder="Temas comunes" />
               </SelectTrigger>
               <SelectContent>
                 {TOPICS.map((topic) => (
@@ -144,7 +186,7 @@ export default function ComparePage() {
                 key={topic}
                 variant={selectedTopic === topic ? "default" : "outline"}
                 className="cursor-pointer"
-                onClick={() => setSelectedTopic(topic)}
+                onClick={() => handleTopicSelect(topic)}
               >
                 {topic}
               </Badge>
@@ -156,10 +198,10 @@ export default function ComparePage() {
             <span className="text-sm font-medium">Comparando:</span>
             <div className="flex flex-wrap gap-2">
               {selectedParties.map((partyId) => {
-                const party = PARTIES.find((p) => p.id === partyId)
+                const party = parties.find((p) => p.slug === partyId)
                 return (
                   <Badge key={partyId} variant="secondary" className="gap-1">
-                    {party?.abbr}
+                    {party?.abbreviation || party?.name || partyId}
                     {selectedParties.length > 1 && (
                       <button onClick={() => removeParty(partyId)} className="ml-1 hover:text-destructive">
                         <X className="size-3" />
@@ -170,14 +212,17 @@ export default function ComparePage() {
               })}
               {selectedParties.length < 4 && availableParties.length > 0 && (
                 <Select onValueChange={addParty}>
-                  <SelectTrigger className="h-6 w-[140px] text-xs">
+                  <SelectTrigger className="h-6 w-[200px] text-xs">
                     <Plus className="mr-1 size-3" />
                     <SelectValue placeholder="Añadir partido" />
                   </SelectTrigger>
                   <SelectContent>
                     {availableParties.map((party) => (
-                      <SelectItem key={party.id} value={party.id}>
-                        {party.abbr}
+                      <SelectItem key={party.slug} value={party.slug}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{party.abbreviation || party.slug.toUpperCase()}</span>
+                          <span className="text-xs text-muted-foreground">{party.name}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -185,69 +230,129 @@ export default function ComparePage() {
               )}
             </div>
           </div>
+
+          {/* Error Message */}
+          {hasError && (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+              <div className="flex items-center gap-2 text-sm text-destructive">
+                <AlertCircle className="size-4" />
+                <span>Error al comparar propuestas. Por favor, intenta de nuevo.</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Comparison Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {selectedParties.map((partyId) => {
-            const party = PARTIES.find((p) => p.id === partyId)
-            const proposal = (MOCK_PROPOSALS as any)[selectedTopic]?.[partyId]
-
+        {(() => {
+          if (!isMounted) {
             return (
-              <Card key={partyId} className="flex flex-col">
+              <div className="flex items-center justify-center py-12">
+                <div className="text-muted-foreground">Cargando...</div>
+              </div>
+            )
+          }
+          
+          if (isLoading) {
+            return (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="size-8 animate-spin text-muted-foreground" />
+                <span className="ml-3 text-muted-foreground">Comparando propuestas...</span>
+              </div>
+            )
+          }
+          
+          if (comparisonData) {
+            return (
+              <>
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold">
+                    Comparación: {comparisonData.topic}
+                  </h2>
+                </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              {comparisonData.comparisons.map((comparison) => {
+                return (
+                  <Card key={comparison.party} className="flex flex-col">
                 <CardHeader className="border-b border-border bg-muted/50">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{party?.name}</CardTitle>
-                      <p className="mt-1 text-sm text-muted-foreground">{party?.abbr}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-lg">{comparison.partyName}</CardTitle>
+                            {getStateIcon(comparison.state)}
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {comparison.partyAbbreviation || comparison.party}
+                          </p>
+                          <div className="mt-2">
+                            <Badge variant={getStateBadgeVariant(comparison.state)} className="text-xs">
+                              {comparison.stateLabel}
+                            </Badge>
+                            {comparison.confidence > 0 && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                Confianza: {Math.round(comparison.confidence * 100)}%
+                              </span>
+                            )}
+                          </div>
                     </div>
                     {selectedParties.length > 1 && (
-                      <Button variant="ghost" size="icon" onClick={() => removeParty(partyId)} className="size-8">
+                          <Button variant="ghost" size="icon" onClick={() => removeParty(comparison.party)} className="size-8">
                         <X className="size-4" />
                       </Button>
                     )}
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1 pt-6">
-                  {proposal ? (
+                      {comparison.state === ProposalState.SIN_INFORMACION ? (
+                        <div className="flex h-full items-center justify-center py-12 text-center">
+                          <div className="space-y-2">
+                            <HelpCircle className="mx-auto size-8 text-muted-foreground" />
+                            <div className="text-sm text-muted-foreground">
+                              No se encontró información sobre este tema en el plan de gobierno de este partido.
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
                     <div className="space-y-4">
-                      {/* Summary */}
+                          {/* Answer/Summary */}
                       <div>
-                        <h4 className="mb-2 text-sm font-semibold text-muted-foreground">Resumen</h4>
-                        <p className="text-sm leading-relaxed">{proposal.summary}</p>
+                            <h4 className="mb-2 text-sm font-semibold text-muted-foreground">Propuesta</h4>
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{comparison.answer}</p>
                       </div>
 
-                      {/* Key Points */}
-                      <div>
-                        <h4 className="mb-2 text-sm font-semibold text-muted-foreground">Puntos clave</h4>
-                        <ul className="space-y-2">
-                          {proposal.points.map((point: string, index: number) => (
-                            <li key={index} className="flex gap-2 text-sm leading-relaxed">
-                              <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
-                              <span>{point}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Source Citation */}
+                          {/* Sources */}
+                          {comparison.sources.length > 0 && (
                       <div className="rounded-lg border border-border bg-muted/30 p-4">
                         <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                           <FileText className="size-3.5" />
-                          Fuente
+                                Fuentes ({comparison.sources.length})
+                              </div>
+                              <div className="space-y-2">
+                                {comparison.sources.map((source, index) => (
+                                  <div key={`${source.documentId || index}-${index}`} className="text-xs">
+                                    <p className="mb-1 text-muted-foreground line-clamp-2">
+                                      {source.content}
+                                    </p>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      {source.pageNumber && (
+                                        <span>Página {source.pageNumber}</span>
+                                      )}
+                                      {source.relevance > 0 && (
+                                        <span>• Relevancia: {Math.round(source.relevance * 100)}%</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
                         </div>
-                        <p className="mb-2 text-sm">{proposal.source}</p>
-                        <Button variant="outline" size="sm" className="h-8 text-xs bg-transparent" asChild>
-                          <Link href={proposal.documentUrl} target="_blank" rel="noopener noreferrer">
+                              {comparison.sources[0]?.documentId && (
+                                <Button variant="outline" size="sm" className="mt-3 h-8 text-xs bg-transparent" asChild>
+                                  <Link href={`/documents`} target="_blank" rel="noopener noreferrer">
                             Ver documento completo
                             <ExternalLink className="ml-2 size-3" />
                           </Link>
                         </Button>
+                              )}
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex h-full items-center justify-center py-12 text-center">
-                      <div className="text-sm text-muted-foreground">No hay información disponible para este tema</div>
+                          )}
                     </div>
                   )}
                 </CardContent>
@@ -255,6 +360,21 @@ export default function ComparePage() {
             )
           })}
         </div>
+            </>
+            )
+          }
+          
+          return (
+            <div className="flex items-center justify-center py-12 text-center">
+              <div className="space-y-2">
+                <Search className="mx-auto size-8 text-muted-foreground" />
+                <div className="text-sm text-muted-foreground">
+                  Selecciona un tema y al menos un partido para comenzar la comparación
+                </div>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Help Text */}
         <div className="mt-8 rounded-lg border border-border bg-muted/30 p-6">
@@ -262,11 +382,15 @@ export default function ComparePage() {
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex gap-2">
               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
-              <span>Selecciona un tema de interés usando los botones o el buscador</span>
+              <span>Selecciona un tema de interés usando los botones o busca un tema personalizado</span>
             </li>
             <li className="flex gap-2">
               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
               <span>Añade hasta 4 partidos para comparar sus propuestas lado a lado</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
+              <span>Los estados indican la calidad de la información: Completa, Parcial, Poco clara, o Sin información</span>
             </li>
             <li className="flex gap-2">
               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />

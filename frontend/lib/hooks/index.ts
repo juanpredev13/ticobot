@@ -11,4 +11,5 @@ export * from './use-health';
 export * from './use-auth';
 export * from './use-parties';
 export * from './use-candidates';
+export * from './use-compare';
 export * from './query-keys';

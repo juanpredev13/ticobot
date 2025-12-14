@@ -256,8 +256,12 @@ export class RAGPipeline {
                     party: partyId,
                     answer: response.answer,
                     sources: searchResults.map(r => ({
-                        content: r.document.content.substring(0, 150) + '...',
+                        content: r.document.content.substring(0, 200) + (r.document.content.length > 200 ? '...' : ''),
                         relevance: r.score,
+                        pageNumber: r.document.metadata?.pageNumber,
+                        pageRange: r.document.metadata?.pageRange,
+                        documentId: r.document.metadata?.documentId || r.document.id,
+                        chunkId: r.document.id,
                     })),
                     confidence: response.confidence,
                 });

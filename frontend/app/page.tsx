@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Search, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import { PageErrorBoundary } from "@/components/page-error-boundary"
 function HomeContent() {
   const [searchQuery, setSearchQuery] = useState("")
   const router = useRouter()
+  const [isMounted, setIsMounted] = useState(false)
 
   // Fetch real data from API
   const { data: documentsData, isLoading: documentsLoading } = useDocuments()
@@ -23,6 +24,20 @@ function HomeContent() {
     limit: 50,
     position: 'Candidato a Presidente'
   })
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Generate unique IDs for skeleton loaders (stable across renders)
+  const partySkeletonIds = useMemo(() => 
+    Array.from({ length: 8 }, (_, i) => `party-skeleton-${i}-${Date.now()}`),
+    []
+  )
+  const candidateSkeletonIds = useMemo(() => 
+    Array.from({ length: 8 }, (_, i) => `candidate-skeleton-${i}-${Date.now()}`),
+    []
+  )
 
   // Get parties from API or use empty array
   const parties = partiesData?.parties || []
@@ -105,25 +120,41 @@ function HomeContent() {
           <div className="grid gap-8 md:grid-cols-4">
             <div className="text-center">
               <div className="mb-2 text-3xl font-bold">
-                {documentsLoading ? <Loader2 className="inline size-8 animate-spin" /> : stats.parties}
+                {!isMounted || documentsLoading ? (
+                  <Loader2 className="inline size-8 animate-spin" />
+                ) : (
+                  stats.parties
+                )}
               </div>
               <div className="text-sm text-muted-foreground">Partidos registrados</div>
             </div>
             <div className="text-center">
               <div className="mb-2 text-3xl font-bold">
-                {documentsLoading ? <Loader2 className="inline size-8 animate-spin" /> : `${stats.documents}+`}
+                {!isMounted || documentsLoading ? (
+                  <Loader2 className="inline size-8 animate-spin" />
+                ) : (
+                  `${stats.documents}+`
+                )}
               </div>
               <div className="text-sm text-muted-foreground">Documentos analizados</div>
             </div>
             <div className="text-center">
               <div className="mb-2 text-3xl font-bold">
-                {healthLoading ? <Loader2 className="inline size-8 animate-spin" /> : stats.verified}
+                {!isMounted || healthLoading ? (
+                  <Loader2 className="inline size-8 animate-spin" />
+                ) : (
+                  stats.verified
+                )}
               </div>
               <div className="text-sm text-muted-foreground">Información verificada</div>
             </div>
             <div className="text-center">
               <div className="mb-2 text-3xl font-bold">
-                {healthLoading ? <Loader2 className="inline size-8 animate-spin" /> : stats.status}
+                {!isMounted || healthLoading ? (
+                  <Loader2 className="inline size-8 animate-spin" />
+                ) : (
+                  stats.status
+                )}
               </div>
               <div className="text-sm text-muted-foreground">Sin sesgo político</div>
             </div>
@@ -140,9 +171,9 @@ function HomeContent() {
 
         {partiesLoading ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {[...Array(8)].map((_, i) => (
+            {partySkeletonIds.map((id) => (
               <div
-                key={i}
+                key={id}
                 className="rounded-lg border border-border bg-card p-6"
             >
               <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-muted">
@@ -189,9 +220,9 @@ function HomeContent() {
 
         {candidatesLoading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {[...Array(8)].map((_, i) => (
+            {candidateSkeletonIds.map((id) => (
               <div
-                key={i}
+                key={id}
                 className="rounded-lg border border-border bg-card p-6"
               >
                 <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
@@ -209,7 +240,6 @@ function HomeContent() {
               // Get party info for this candidate
               const candidateParty = parties.find(p => p.id === candidate.party_id)
               const partyName = candidateParty?.name || 'Sin partido'
-              const partySlug = candidateParty?.slug || ''
               
               return (
             <Link

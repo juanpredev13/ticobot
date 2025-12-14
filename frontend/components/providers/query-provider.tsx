@@ -1,10 +1,24 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import dynamic from 'next/dynamic';
 import { useState, type ReactNode } from 'react';
 
-export function QueryProvider({ children }: { children: ReactNode }) {
+// Dynamically import ReactQueryDevtools to avoid hydration issues
+// Only loads on client-side in development mode
+const ReactQueryDevtools =
+  process.env.NODE_ENV === 'development' &&
+  process.env.NEXT_PUBLIC_ENABLE_QUERY_DEVTOOLS === 'true'
+    ? dynamic(
+        () =>
+          import('@tanstack/react-query-devtools').then(
+            (mod) => mod.ReactQueryDevtools
+          ),
+        { ssr: false }
+      )
+    : () => null;
+
+export function QueryProvider({ children }: { readonly children: ReactNode }) {
   // Always create QueryClient, even during SSR/build
   // This prevents "No QueryClient set" errors during static generation
   const [queryClient] = useState(
@@ -17,21 +31,16 @@ export function QueryProvider({ children }: { children: ReactNode }) {
             retry: 1,
             refetchOnWindowFocus: false,
             // Disable queries during SSR to avoid unnecessary API calls
-            enabled: typeof window !== 'undefined',
+            enabled: globalThis.window !== undefined,
           },
         },
       })
   );
 
-  const showDevtools =
-    typeof window !== 'undefined' &&
-    process.env.NODE_ENV === 'development' &&
-    process.env.NEXT_PUBLIC_ENABLE_QUERY_DEVTOOLS === 'true';
-
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {showDevtools && <ReactQueryDevtools initialIsOpen={false} />}
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 }
