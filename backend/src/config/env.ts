@@ -8,7 +8,7 @@ dotenv.config();
  */
 const envSchema = z.object({
   // Provider selection
-  EMBEDDING_PROVIDER: z.enum(['openai', 'cohere', 'huggingface']).default('openai'),
+  EMBEDDING_PROVIDER: z.enum(['openai', 'cohere', 'huggingface', 'deepseek']).default('openai'),
   VECTOR_STORE: z.enum(['supabase', 'pinecone', 'qdrant', 'weaviate']).default('supabase'),
   LLM_PROVIDER: z.enum(['openai', 'anthropic', 'google', 'ollama', 'deepseek']).default('openai'),
   DATABASE_PROVIDER: z.enum(['supabase', 'postgresql']).default('supabase'),
@@ -22,6 +22,7 @@ const envSchema = z.object({
   DEEPSEEK_API_KEY: z.string().optional(),
   DEEPSEEK_BASE_URL: z.string().default('https://api.deepseek.com'),
   DEEPSEEK_MODEL: z.string().default('deepseek-chat'),
+  DEEPSEEK_EMBEDDING_MODEL: z.string().default('text-embedding'),
 
   // Anthropic configuration
   ANTHROPIC_API_KEY: z.string().optional(),

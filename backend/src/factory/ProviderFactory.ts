@@ -31,6 +31,11 @@ export class ProviderFactory {
         this.embeddingProviderInstance = new OpenAIEmbeddingProvider(env);
         return this.embeddingProviderInstance;
       }
+      case 'deepseek': {
+        const { DeepSeekEmbeddingProvider } = await import('../providers/embedding/DeepSeekEmbeddingProvider.js');
+        this.embeddingProviderInstance = new DeepSeekEmbeddingProvider(env);
+        return this.embeddingProviderInstance;
+      }
       case 'cohere':
         throw new Error('Cohere embedding provider not yet implemented');
       case 'huggingface':

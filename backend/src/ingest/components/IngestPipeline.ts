@@ -76,20 +76,57 @@ export class IngestPipeline {
         this.logger.info(`Starting ingestion pipeline for ${documentId}`);
 
         try {
-            // 1. Download PDF
+            // 1. Download PDF (or use local if exists)
             const downloadStart = Date.now();
             const downloadPath =
                 options.downloadPath || path.join(process.cwd(), "downloads");
+            
+            // Check if PDF exists locally first (in downloads/pdfs/)
+            // Try multiple possible names (documentId, cr1 for unknown-2026, etc.)
+            const pdfsDir = path.join(downloadPath, "pdfs");
+            let localPdfPath: string | null = null;
+            
+            // Try documentId first
+            const primaryPath = path.join(pdfsDir, `${documentId}.pdf`);
+            try {
+                await fs.access(primaryPath);
+                localPdfPath = primaryPath;
+            } catch {
+                // Try alternative names (e.g., cr1-2026 for unknown-2026)
+                if (documentId === 'unknown-2026') {
+                    const altPath = path.join(pdfsDir, 'cr1-2026.pdf');
+                    try {
+                        await fs.access(altPath);
+                        localPdfPath = altPath;
+                        this.logger.info(`Found PDF with alternative name: cr1-2026.pdf`);
+                    } catch {
+                        // Not found with alternative name either
+                    }
+                }
+            }
 
-            // Create a downloader with the specified output directory
-            const downloader = new PDFDownloader({ outputDir: downloadPath });
-
-            const downloadResult = await downloader.download(
-                url,
-                documentId
-            );
-            stats.downloadTime = Date.now() - downloadStart;
-            this.logger.info(`Downloaded PDF (${stats.downloadTime}ms)`);
+            let downloadResult;
+            if (localPdfPath) {
+                // PDF exists locally, use it
+                this.logger.info(`Using local PDF: ${localPdfPath}`);
+                const fileStats = await fs.stat(localPdfPath);
+                downloadResult = {
+                    documentId,
+                    filePath: localPdfPath,
+                    fileSize: fileStats.size,
+                    downloadedAt: fileStats.mtime,
+                    status: 'success' as const,
+                };
+                stats.downloadTime = Date.now() - downloadStart;
+                this.logger.info(`Using local PDF (${stats.downloadTime}ms)`);
+            } else {
+                // PDF doesn't exist locally, download it
+                this.logger.info(`PDF not found locally, downloading from ${url}`);
+                const downloader = new PDFDownloader({ outputDir: downloadPath });
+                downloadResult = await downloader.download(url, documentId);
+                stats.downloadTime = Date.now() - downloadStart;
+                this.logger.info(`Downloaded PDF (${stats.downloadTime}ms)`);
+            }
 
             // 2. Parse PDF
             const parseStart = Date.now();
