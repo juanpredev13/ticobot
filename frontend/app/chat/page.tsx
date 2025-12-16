@@ -36,10 +36,14 @@ type Message = {
 type AuthMode = "signup" | "signin"
 
 const SUGGESTED_QUESTIONS = [
-  "¿Qué proponen los partidos sobre educación?",
-  "¿Cuáles son las propuestas de salud?",
-  "¿Qué planes tienen para el empleo?",
-  "¿Cómo abordan la seguridad ciudadana?",
+  "¿Qué proponen los partidos sobre educación superior y universidades públicas?",
+  "¿Cuáles son las propuestas de los partidos para mejorar el sistema de salud?",
+  "¿Qué planes tienen los partidos para generar empleo y reducir el desempleo?",
+  "¿Cómo abordan los partidos la seguridad ciudadana y la delincuencia?",
+  "¿Cuál es el candidato presidencial del PLN?",
+  "¿Qué proponen los partidos sobre el cambio climático y medio ambiente?",
+  "¿Cuáles son las propuestas de los partidos sobre transporte público?",
+  "¿Qué planes tienen los partidos para la economía y el crecimiento?",
 ]
 
 function ChatContent() {
