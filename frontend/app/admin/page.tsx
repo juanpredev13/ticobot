@@ -24,7 +24,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { SiteHeader } from "@/components/site-header" // Import global SiteHeader
 import { DatabaseStatus } from "@/components/database-status"
 
 type SystemStatus = "healthy" | "warning" | "critical"
@@ -209,15 +208,12 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <SiteHeader /> {/* Using global SiteHeader */}
-      <div className="container mx-auto px-4 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="mb-2 text-3xl font-bold">Panel de administración</h1>
-          <p className="text-muted-foreground">Monitoreo del sistema, gestión de documentos y configuración</p>
-        </div>
+    <div className="p-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="mb-2 text-3xl font-bold">Panel de administración</h1>
+        <p className="text-muted-foreground">Monitoreo del sistema, gestión de documentos y configuración</p>
+      </div>
 
         {/* System Alerts */}
         {MOCK_ALERTS.length > 0 && (
@@ -561,7 +557,6 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   )
 }
