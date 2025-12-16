@@ -139,10 +139,12 @@ Based on the context above, please answer the following question:
 ${query}
 
 Important:
-- Base your answer ONLY on the information provided in the context
-- If the context doesn't contain enough information to answer fully, say so
-- Cite which party's plan you're referencing when possible
-- Be concise but comprehensive`;
+- You MUST use the information provided in the context above to answer the question
+- The context contains relevant information from government plans - use it to provide a detailed answer
+- If multiple parties are mentioned, compare their proposals
+- Cite which party's plan you're referencing (e.g., "Según el plan del PLN...", "El FA propone...")
+- Be comprehensive and use all relevant information from the context
+- Only say you don't have information if the context is truly empty or irrelevant`;
     }
 
     /**
