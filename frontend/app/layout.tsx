@@ -2,9 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Unbounded, Geist } from "next/font/google"
 import "./globals.css"
-import { SiteHeader } from "@/components/site-header"
-import { BottomMobileNav } from "@/components/bottom-mobile-nav"
 import { ClientProviders } from "@/components/providers/client-providers"
+import { AdminLayoutWrapper } from "@/components/admin/admin-layout-wrapper"
 
 const unbounded = Unbounded({
   subsets: ["latin"],
@@ -51,9 +50,7 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={`${unbounded.variable} ${geist.variable} font-sans antialiased`}>
         <ClientProviders>
-          <SiteHeader />
-          <div className="pb-16 md:pb-0">{children}</div>
-          <BottomMobileNav />
+          <AdminLayoutWrapper>{children}</AdminLayoutWrapper>
         </ClientProviders>
       </body>
     </html>
