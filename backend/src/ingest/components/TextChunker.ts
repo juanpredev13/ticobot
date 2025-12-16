@@ -8,6 +8,7 @@ export interface ChunkOptions {
     overlapSize?: number;      // Overlap tokens (default: 50)
     splitOn?: 'paragraph' | 'sentence' | 'word';
     pageMarkers?: PageMarker[]; // Optional page markers for metadata
+    embeddingMaxTokens?: number; // Maximum tokens allowed by embedding model (default: 8192)
 }
 
 export interface TextChunk {
@@ -49,10 +50,14 @@ export class TextChunker {
             maxChunkSize = 600,
             overlapSize = 50,
             splitOn = 'paragraph',
-            pageMarkers = []
+            pageMarkers = [],
+            embeddingMaxTokens = 8192
         } = options;
 
-        this.logger.info(`Chunking text for ${documentId} (${text.length} chars, target: ${chunkSize} tokens)`);
+        // Effective max chunk size is the minimum of maxChunkSize and embeddingMaxTokens
+        const effectiveMaxChunkSize = Math.min(maxChunkSize, embeddingMaxTokens - 100); // 100 token safety margin
+
+        this.logger.info(`Chunking text for ${documentId} (${text.length} chars, target: ${chunkSize} tokens, max: ${effectiveMaxChunkSize} tokens)`);
 
         // Split text into segments
         const segments = this.splitText(text, splitOn);
@@ -65,11 +70,65 @@ export class TextChunker {
         let startChar = 0;
 
         for (let i = 0; i < segments.length; i++) {
-            const segment = segments[i];
-            const segmentTokens = this.countTokens(segment);
+            let segment = segments[i];
+            let segmentTokens = this.countTokens(segment);
+
+            // If segment is too large, split it further
+            if (segmentTokens > effectiveMaxChunkSize) {
+                this.logger.warn(
+                    `Segment ${i} is too large (${segmentTokens} tokens), splitting by ${splitOn === 'paragraph' ? 'sentence' : 'word'}`
+                );
+                const subSegments = this.splitLargeSegment(segment, effectiveMaxChunkSize, splitOn);
+                
+                // Process each sub-segment
+                for (const subSegment of subSegments) {
+                    const subTokens = this.countTokens(subSegment);
+                    
+                    // If adding this sub-segment would exceed max size, save current chunk
+                    if (currentTokens + subTokens > effectiveMaxChunkSize && currentChunk.length > 0) {
+                        chunks.push(this.createChunk(
+                            documentId,
+                            currentChunk,
+                            chunkIndex++,
+                            startChar,
+                            startChar + currentChunk.length,
+                            pageMarkers
+                        ));
+
+                        // Start new chunk with overlap
+                        const overlapText = this.getOverlapText(currentChunk, overlapSize);
+                        startChar = startChar + currentChunk.length - overlapText.length;
+                        currentChunk = overlapText;
+                        currentTokens = this.countTokens(overlapText);
+                    }
+
+                    // Add sub-segment to current chunk
+                    currentChunk += (currentChunk.length > 0 ? '\n\n' : '') + subSegment;
+                    currentTokens += subTokens;
+
+                    // If we've reached target size, save chunk
+                    if (currentTokens >= chunkSize && i < segments.length - 1) {
+                        chunks.push(this.createChunk(
+                            documentId,
+                            currentChunk,
+                            chunkIndex++,
+                            startChar,
+                            startChar + currentChunk.length,
+                            pageMarkers
+                        ));
+
+                        // Start new chunk with overlap
+                        const overlapText = this.getOverlapText(currentChunk, overlapSize);
+                        startChar = startChar + currentChunk.length - overlapText.length;
+                        currentChunk = overlapText;
+                        currentTokens = this.countTokens(overlapText);
+                    }
+                }
+                continue;
+            }
 
             // If adding this segment would exceed max size, save current chunk
-            if (currentTokens + segmentTokens > maxChunkSize && currentChunk.length > 0) {
+            if (currentTokens + segmentTokens > effectiveMaxChunkSize && currentChunk.length > 0) {
                 chunks.push(this.createChunk(
                     documentId,
                     currentChunk,
@@ -121,9 +180,24 @@ export class TextChunker {
             ));
         }
 
-        this.logger.info(`Created ${chunks.length} chunks for ${documentId}`);
+        // Final validation: ensure no chunk exceeds embedding limit
+        const validChunks: TextChunk[] = [];
+        for (const chunk of chunks) {
+            if (chunk.tokens > embeddingMaxTokens) {
+                this.logger.warn(
+                    `Chunk ${chunk.chunkIndex} exceeds embedding limit (${chunk.tokens} > ${embeddingMaxTokens} tokens), splitting...`
+                );
+                // Split oversized chunk by sentences
+                const splitChunks = this.splitOversizedChunk(chunk, embeddingMaxTokens, pageMarkers);
+                validChunks.push(...splitChunks);
+            } else {
+                validChunks.push(chunk);
+            }
+        }
 
-        return chunks;
+        this.logger.info(`Created ${validChunks.length} chunks for ${documentId}`);
+
+        return validChunks;
     }
 
     /**
@@ -146,6 +220,122 @@ export class TextChunker {
             default:
                 return [text];
         }
+    }
+
+    /**
+     * Split a large segment into smaller sub-segments
+     */
+    private splitLargeSegment(
+        segment: string,
+        maxTokens: number,
+        currentStrategy: 'paragraph' | 'sentence' | 'word'
+    ): string[] {
+        // Try splitting by sentences if currently splitting by paragraphs
+        if (currentStrategy === 'paragraph') {
+            const sentences = this.splitText(segment, 'sentence');
+            const subSegments: string[] = [];
+            let currentSubSegment = '';
+            let currentSubTokens = 0;
+
+            for (const sentence of sentences) {
+                const sentenceTokens = this.countTokens(sentence);
+                
+                if (currentSubTokens + sentenceTokens > maxTokens && currentSubSegment.length > 0) {
+                    subSegments.push(currentSubSegment.trim());
+                    currentSubSegment = sentence;
+                    currentSubTokens = sentenceTokens;
+                } else {
+                    currentSubSegment += (currentSubSegment.length > 0 ? ' ' : '') + sentence;
+                    currentSubTokens += sentenceTokens;
+                }
+            }
+
+            if (currentSubSegment.trim().length > 0) {
+                subSegments.push(currentSubSegment.trim());
+            }
+
+            return subSegments;
+        }
+
+        // If already splitting by sentences, split by words
+        if (currentStrategy === 'sentence') {
+            const words = this.splitText(segment, 'word');
+            const subSegments: string[] = [];
+            let currentSubSegment = '';
+            let currentSubTokens = 0;
+
+            for (const word of words) {
+                const wordTokens = this.countTokens(word);
+                
+                if (currentSubTokens + wordTokens > maxTokens && currentSubSegment.length > 0) {
+                    subSegments.push(currentSubSegment.trim());
+                    currentSubSegment = word;
+                    currentSubTokens = wordTokens;
+                } else {
+                    currentSubSegment += (currentSubSegment.length > 0 ? ' ' : '') + word;
+                    currentSubTokens += wordTokens;
+                }
+            }
+
+            if (currentSubSegment.trim().length > 0) {
+                subSegments.push(currentSubSegment.trim());
+            }
+
+            return subSegments;
+        }
+
+        // Last resort: split by words even if already splitting by words
+        return this.splitText(segment, 'word');
+    }
+
+    /**
+     * Split an oversized chunk into smaller chunks
+     */
+    private splitOversizedChunk(
+        chunk: TextChunk,
+        maxTokens: number,
+        pageMarkers: PageMarker[]
+    ): TextChunk[] {
+        const sentences = this.splitText(chunk.content, 'sentence');
+        const newChunks: TextChunk[] = [];
+        let currentContent = '';
+        let currentTokens = 0;
+        let chunkIndex = chunk.chunkIndex;
+        let startChar = chunk.startChar;
+
+        for (const sentence of sentences) {
+            const sentenceTokens = this.countTokens(sentence);
+            
+            if (currentTokens + sentenceTokens > maxTokens && currentContent.length > 0) {
+                newChunks.push(this.createChunk(
+                    chunk.documentId,
+                    currentContent,
+                    chunkIndex++,
+                    startChar,
+                    startChar + currentContent.length,
+                    pageMarkers
+                ));
+                startChar += currentContent.length;
+                currentContent = sentence;
+                currentTokens = sentenceTokens;
+            } else {
+                currentContent += (currentContent.length > 0 ? ' ' : '') + sentence;
+                currentTokens += sentenceTokens;
+            }
+        }
+
+        if (currentContent.trim().length > 0) {
+            newChunks.push(this.createChunk(
+                chunk.documentId,
+                currentContent,
+                chunkIndex,
+                startChar,
+                startChar + currentContent.length,
+                pageMarkers
+            ));
+        }
+
+        return newChunks;
     }
 
     /**

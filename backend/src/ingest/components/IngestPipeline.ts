@@ -76,25 +76,58 @@ export class IngestPipeline {
         this.logger.info(`Starting ingestion pipeline for ${documentId}`);
 
         try {
-            // 1. Download PDF
-            const downloadStart = Date.now();
+            // 1. Check for local PDF first
             const downloadPath =
-                options.downloadPath || path.join(process.cwd(), "downloads");
+                options.downloadPath || path.join(process.cwd(), "downloads", "pdfs");
+            
+            let pdfFilePath: string | null = null;
+            const downloadStart = Date.now();
 
-            // Create a downloader with the specified output directory
-            const downloader = new PDFDownloader({ outputDir: downloadPath });
+            // Check if local PDF exists
+            const localPdfPath = path.join(downloadPath, `${documentId}.pdf`);
+            try {
+                await fs.access(localPdfPath);
+                pdfFilePath = localPdfPath;
+                this.logger.info(`Using local PDF: ${pdfFilePath}`);
+            } catch {
+                // Special case: unknown-2026 -> cr1-2026.pdf
+                if (documentId === 'unknown-2026') {
+                    const alternativePdfPath = path.join(downloadPath, 'cr1-2026.pdf');
+                    try {
+                        await fs.access(alternativePdfPath);
+                        pdfFilePath = alternativePdfPath;
+                        this.logger.info(`Using local PDF: ${pdfFilePath}`);
+                    } catch {
+                        // Continue to download
+                    }
+                }
+            }
 
-            const downloadResult = await downloader.download(
-                url,
-                documentId
-            );
+            // If no local PDF, download it
+            let fileSize: number;
+            if (!pdfFilePath) {
+                const downloader = new PDFDownloader({ outputDir: downloadPath });
+                const downloadResult = await downloader.download(url, documentId);
+                
+                if (downloadResult.status === 'failed') {
+                    throw new Error(`PDF download failed: ${downloadResult.error}`);
+                }
+                
+                pdfFilePath = downloadResult.filePath;
+                fileSize = downloadResult.fileSize;
+                this.logger.info(`Downloaded PDF: ${pdfFilePath}`);
+            } else {
+                // Get file size for local PDF
+                const fileStats = await fs.stat(pdfFilePath);
+                fileSize = fileStats.size;
+            }
+
             stats.downloadTime = Date.now() - downloadStart;
-            this.logger.info(`Downloaded PDF (${stats.downloadTime}ms)`);
 
             // 2. Parse PDF
             const parseStart = Date.now();
             const parseResult = await this.parser.parse(
-                downloadResult.filePath,
+                pdfFilePath,
                 documentId
             );
             stats.parseTime = Date.now() - parseStart;
@@ -118,12 +151,18 @@ export class IngestPipeline {
 
             // 4. Chunk text with page information
             const chunkStart = Date.now();
+            
+            // Get embedding provider to check max tokens
+            const embeddingProvider = await ProviderFactory.getEmbeddingProvider();
+            const embeddingMaxTokens = embeddingProvider.getMaxInputLength();
+
             const chunks = await this.chunker.chunk(
                 cleaningResult.cleanedText,
                 documentId,
                 {
                     ...options.chunkingOptions,
-                    pageMarkers: cleaningResult.pageMarkers
+                    pageMarkers: cleaningResult.pageMarkers,
+                    embeddingMaxTokens
                 }
             );
             stats.chunkTime = Date.now() - chunkStart;
@@ -146,7 +185,7 @@ export class IngestPipeline {
                     documentId,
                     url,
                     parseResult.pageCount,
-                    downloadResult.fileSize
+                    fileSize
                 );
                 this.logger.info("Stored chunks in vector database");
             }
