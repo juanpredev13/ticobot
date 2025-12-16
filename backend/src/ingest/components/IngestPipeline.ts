@@ -152,9 +152,15 @@ export class IngestPipeline {
             // 4. Chunk text with page information
             const chunkStart = Date.now();
             
-            // Get embedding provider to check max tokens
-            const embeddingProvider = await ProviderFactory.getEmbeddingProvider();
-            const embeddingMaxTokens = embeddingProvider.getMaxInputLength();
+            // Get embedding provider to check max tokens (optional, use default if not available)
+            let embeddingMaxTokens = 8192; // Default OpenAI limit
+            try {
+                const embeddingProvider = await ProviderFactory.getEmbeddingProvider();
+                embeddingMaxTokens = embeddingProvider.getMaxInputLength();
+            } catch (error) {
+                // If embedding provider is not configured, use default
+                this.logger.warn('Embedding provider not available, using default max tokens (8192)');
+            }
 
             const chunks = await this.chunker.chunk(
                 cleaningResult.cleanedText,
