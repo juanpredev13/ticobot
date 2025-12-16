@@ -95,6 +95,8 @@ export class RAGPipeline {
             // Step 3: Build context
             this.logger.info('Step 3/4: Building context...');
             const context = this.contextBuilder.build(searchResults, question);
+            this.logger.info(`Context built: ${context.length} characters`);
+            this.logger.info(`Context preview: ${context.substring(0, 300)}...`);
 
             // Step 4: Generate response
             this.logger.info('Step 4/4: Generating response...');

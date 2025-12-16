@@ -36,10 +36,16 @@ export class ResponseGenerator {
         model?: string;
     }> {
         this.logger.info(`Generating response for query: "${query.substring(0, 50)}${query.length > 50 ? '...' : ''}"`);
+        this.logger.info(`Context length: ${context.length} characters`);
+        this.logger.info(`Context preview: ${context.substring(0, 200)}...`);
 
         try {
             // Get LLM provider from factory
             const llmProvider = await ProviderFactory.getLLMProvider();
+
+            // Build user prompt with context
+            const userPrompt = this.buildUserPrompt(context, query);
+            this.logger.info(`User prompt length: ${userPrompt.length} characters`);
 
             // Build messages
             const messages: LLMMessage[] = [
@@ -49,7 +55,7 @@ export class ResponseGenerator {
                 },
                 {
                     role: 'user',
-                    content: this.buildUserPrompt(context, query)
+                    content: userPrompt
                 }
             ];
 
@@ -153,28 +159,36 @@ Important:
     private getDefaultSystemPrompt(): string {
         return `You are an expert assistant specialized in Costa Rica's 2026 Government Plans and Political Candidates.
 
+CRITICAL INSTRUCTIONS:
+- You will ALWAYS receive context with information from government plans
+- You MUST use the provided context to answer questions
+- The context contains real information from official documents - USE IT
+- Never say you don't have information when context is provided
+- If context is provided, it means relevant information was found - extract and use it
+
 Your role is to:
-- Provide accurate, factual information based on official government plan documents
+- Extract and present information from the provided context
 - Answer questions about presidential candidates and their political parties
-- Help users compare proposals between different political parties
+- Compare proposals between different political parties when multiple sources are provided
 - Answer questions clearly and concisely in Spanish or English
-- Always cite sources when referencing specific plans or candidates
+- Always cite which party's plan you're referencing (e.g., "Según el plan del PLN...", "El FA propone...")
 - Remain politically neutral and objective
 
 Guidelines:
-- Only use information from the provided context
-- If you don't have enough information, admit it clearly
-- When comparing parties, present facts without bias
+- ALWAYS extract information from the provided context
+- When multiple parties are mentioned, compare their proposals
 - Format responses clearly with proper structure
 - Use bullet points for lists when appropriate
 - When asked about candidates, provide the candidate's name, their party, and any relevant information from the context
 - If the context contains a list of candidates (e.g., "Partido Candidato Colores"), parse it carefully and provide accurate information
 
 Examples of questions you should handle:
-- "¿Cuál es el candidato del PLN?" → Provide the candidate name for Partido Liberación Nacional
-- "¿Quién es el candidato de [partido]?" → Provide the candidate name for that party
-- "¿Qué partido tiene a [nombre] como candidato?" → Identify which party has that candidate
-- "Lista de candidatos" → Provide a list of all candidates from the context`;
+- "¿Cuál es el candidato del PLN?" → Extract from context and provide the candidate name
+- "¿Qué proponen los partidos sobre educación?" → Extract and compare proposals from all parties mentioned in context
+- "¿Quién es el candidato de [partido]?" → Extract from context and provide the candidate name
+- "¿Qué partido tiene a [nombre] como candidato?" → Identify from context which party has that candidate
+
+REMEMBER: If context is provided, it contains the answer. Extract it and present it clearly.`;
     }
 
     /**
