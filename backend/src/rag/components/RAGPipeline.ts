@@ -4,6 +4,9 @@ import { ContextBuilder } from './ContextBuilder.js';
 import { ResponseGenerator } from './ResponseGenerator.js';
 import { Logger, type SearchResult } from '@ticobot/shared';
 
+// Document IDs to exclude from displayed sources (but keep in context for LLM)
+const EXCLUDED_FROM_SOURCES = ['partidos-candidatos-2026'];
+
 /**
  * RAGPipeline - Main orchestrator for Retrieval-Augmented Generation
  * Coordinates the complete query-to-response workflow
@@ -100,16 +103,22 @@ export class RAGPipeline {
                 maxTokens: options?.maxTokens,
             });
 
-            // Build sources
-            const sources = searchResults.map(result => ({
-                id: result.document.id,
-                content: result.document.content.substring(0, 200) + '...',
-                party: result.document.metadata?.partyId || result.document.metadata?.party || 'Unknown',
-                document: result.document.metadata?.title || result.document.metadata?.documentId || 'Unknown',
-                relevance: result.score,
-                pageNumber: result.document.metadata?.pageNumber,
-                pageRange: result.document.metadata?.pageRange,
-            }));
+            // Build sources (exclude metadata documents from displayed sources)
+            const sources = searchResults
+                .filter(result => {
+                    const documentId = result.document.metadata?.documentId || '';
+                    // Exclude metadata documents from sources but keep them in context
+                    return !EXCLUDED_FROM_SOURCES.includes(documentId);
+                })
+                .map(result => ({
+                    id: result.document.id,
+                    content: result.document.content.substring(0, 200) + '...',
+                    party: result.document.metadata?.partyId || result.document.metadata?.party || 'Unknown',
+                    document: result.document.metadata?.title || result.document.metadata?.documentId || 'Unknown',
+                    relevance: result.score,
+                    pageNumber: result.document.metadata?.pageNumber,
+                    pageRange: result.document.metadata?.pageRange,
+                }));
 
             const queryTime = Date.now() - startTime;
             this.logger.info(`Query completed in ${queryTime}ms`);
@@ -185,12 +194,17 @@ export class RAGPipeline {
                 };
             }
 
-            // Yield final metadata
-            const sources = searchResults.map(result => ({
-                id: result.document.id,
-                party: result.document.metadata?.partyId || 'Unknown',
-                relevance: result.score,
-            }));
+            // Yield final metadata (exclude metadata documents from sources)
+            const sources = searchResults
+                .filter(result => {
+                    const documentId = result.document.metadata?.documentId || '';
+                    return !EXCLUDED_FROM_SOURCES.includes(documentId);
+                })
+                .map(result => ({
+                    id: result.document.id,
+                    party: result.document.metadata?.partyId || 'Unknown',
+                    relevance: result.score,
+                }));
 
             yield {
                 type: 'metadata',
@@ -255,14 +269,19 @@ export class RAGPipeline {
                 comparisons.push({
                     party: partyId,
                     answer: response.answer,
-                    sources: searchResults.map(r => ({
-                        content: r.document.content.substring(0, 200) + (r.document.content.length > 200 ? '...' : ''),
-                        relevance: r.score,
-                        pageNumber: r.document.metadata?.pageNumber,
-                        pageRange: r.document.metadata?.pageRange,
-                        documentId: r.document.metadata?.documentId || r.document.id,
-                        chunkId: r.document.id,
-                    })),
+                    sources: searchResults
+                        .filter(r => {
+                            const documentId = r.document.metadata?.documentId || '';
+                            return !EXCLUDED_FROM_SOURCES.includes(documentId);
+                        })
+                        .map(r => ({
+                            content: r.document.content.substring(0, 200) + (r.document.content.length > 200 ? '...' : ''),
+                            relevance: r.score,
+                            pageNumber: r.document.metadata?.pageNumber,
+                            pageRange: r.document.metadata?.pageRange,
+                            documentId: r.document.metadata?.documentId || r.document.id,
+                            chunkId: r.document.id,
+                        })),
                     confidence: response.confidence,
                 });
             } else {
