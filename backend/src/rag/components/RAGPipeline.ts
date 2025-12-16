@@ -289,7 +289,7 @@ export class RAGPipeline {
             } else {
                 comparisons.push({
                     party: partyId,
-                    answer: `No information found for ${partyId} on this topic.`,
+                    answer: `No se encontró información para ${partyId} sobre este tema.`,
                     sources: [],
                     confidence: 0,
                 });
@@ -307,7 +307,7 @@ export class RAGPipeline {
      */
     private buildEmptyResponse(question: string, queryTime: number) {
         return {
-            answer: 'I could not find relevant information in the government plans database to answer your question. Please try rephrasing or asking about a different topic.',
+            answer: 'No pude encontrar información relevante en la base de datos de planes de gobierno para responder tu pregunta. Por favor, intenta reformular la pregunta o pregunta sobre un tema diferente.',
             sources: [],
             confidence: 0,
             metadata: {

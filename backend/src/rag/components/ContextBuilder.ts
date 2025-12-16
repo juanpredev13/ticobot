@@ -107,7 +107,7 @@ export class ContextBuilder {
      * @returns Message indicating no results
      */
     private buildEmptyContext(query: string): string {
-        return `No relevant information found in the government plans database for the query: "${query}"`;
+        return `No se encontró información relevante en la base de datos de planes de gobierno para la consulta: "${query}"`;
     }
 
     /**
