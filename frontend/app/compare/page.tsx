@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCompareProposals, useParties } from "@/lib/hooks"
 import { ProposalState } from "@/lib/api/services/compare"
 import Link from "next/link"
+import { createPartyColorMap, getPartyPrimaryColor } from "@/lib/utils/party-colors"
 
 const TOPICS = ["Educación", "Salud", "Empleo", "Seguridad", "Ambiente", "Economía", "Infraestructura", "Corrupción"]
 
@@ -58,6 +59,9 @@ export default function ComparePage() {
   // Fetch parties list
   const { data: partiesData, isLoading: partiesLoading } = useParties()
   const parties = partiesData?.parties || []
+  
+  // Create party color map
+  const partyColorMap = createPartyColorMap(parties)
 
   // Compare mutation
   const compareMutation = useCompareProposals()
@@ -273,10 +277,21 @@ export default function ComparePage() {
               {comparisonData.comparisons.map((comparison) => {
                 return (
                   <Card key={comparison.party} className="flex flex-col">
-                <CardHeader className="border-b border-border bg-muted/50">
+                <CardHeader 
+                  className="border-b border-border"
+                  style={{ 
+                    backgroundColor: `${getPartyPrimaryColor(comparison.party, partyColorMap)}15`,
+                    borderLeftColor: getPartyPrimaryColor(comparison.party, partyColorMap),
+                    borderLeftWidth: '4px'
+                  }}
+                >
                   <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
+                            <div 
+                              className="size-3 rounded-full"
+                              style={{ backgroundColor: getPartyPrimaryColor(comparison.party, partyColorMap) }}
+                            />
                             <CardTitle className="text-lg">{comparison.partyName}</CardTitle>
                             {getStateIcon(comparison.state)}
                           </div>

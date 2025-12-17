@@ -14,9 +14,10 @@ import { Label } from "@/components/ui/label"
 import { getUsageStatus, incrementChatUsage, canSendMessage, type UsageStatus } from "@/lib/usage-tracker"
 import { UsageBanner } from "@/components/usage-banner"
 import { AuthDialog } from "@/components/auth-dialog"
-import { useChat, useChatStream, useUser } from "@/lib/hooks"
+import { useChat, useChatStream, useUser, useParties } from "@/lib/hooks"
 import { PageErrorBoundary } from "@/components/page-error-boundary"
 import type { ChatResponse } from "@/lib/api/types"
+import { createPartyColorMap, getPartyPrimaryColor } from "@/lib/utils/party-colors"
 
 type Message = {
   id: string
@@ -65,6 +66,10 @@ function ChatContent() {
   const { data: user, isLoading: userLoading } = useUser()
   const chatMutation = useChat()
   const { startStream, stopStream, isStreaming, streamedContent, sources: streamSources, reset: resetStream } = useChatStream()
+  const { data: partiesData } = useParties()
+
+  // Create party color map
+  const partyColorMap = createPartyColorMap(partiesData?.parties || [])
 
   const isAuthenticated = !!user
   const isLoading = chatMutation.isPending || isStreaming
@@ -393,27 +398,36 @@ function ChatContent() {
                                 Fuentes consultadas
                               </div>
                               <div className="space-y-2">
-                                {message.sources.map((source, index) => (
-                                  <div key={index} className="rounded-lg border border-border bg-muted/30 p-3">
-                                    <div className="mb-1 flex items-start justify-between gap-2">
-                                      <div>
-                                        <div className="text-xs font-semibold">{source.title}</div>
-                                        {source.metadata?.party && (
-                                          <div className="text-xs text-muted-foreground">
-                                            {source.metadata.party}
-                                            {source.metadata.page && `, pág. ${source.metadata.page}`}
-                                          </div>
-                                        )}
+                                {message.sources.map((source, index) => {
+                                  const partyColor = getPartyPrimaryColor(source.metadata?.party, partyColorMap)
+                                  return (
+                                    <div key={index} className="rounded-lg border border-border bg-muted/30 p-3">
+                                      <div className="mb-1 flex items-start justify-between gap-2">
+                                        <div>
+                                          <div className="text-xs font-semibold">{source.title}</div>
+                                          {source.metadata?.party && (
+                                            <div className="mt-1 flex items-center gap-2">
+                                              <div 
+                                                className="size-2 rounded-full"
+                                                style={{ backgroundColor: partyColor }}
+                                              />
+                                              <span className="text-xs text-muted-foreground">
+                                                {source.metadata.party}
+                                                {source.metadata.page && `, pág. ${source.metadata.page}`}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <Badge variant="secondary" className="shrink-0 text-xs">
+                                          {(source.score * 100).toFixed(0)}%
+                                        </Badge>
                                       </div>
-                                      <Badge variant="secondary" className="shrink-0 text-xs">
-                                        {(source.score * 100).toFixed(0)}%
-                                      </Badge>
+                                      <p className="mb-2 text-xs leading-relaxed text-muted-foreground line-clamp-3">
+                                        {source.content}
+                                      </p>
                                     </div>
-                                    <p className="mb-2 text-xs leading-relaxed text-muted-foreground line-clamp-3">
-                                      {source.content}
-                                    </p>
-                                  </div>
-                                ))}
+                                  )
+                                })}
                               </div>
                             </div>
                           )}

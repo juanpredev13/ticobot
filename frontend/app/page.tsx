@@ -186,28 +186,33 @@ function HomeContent() {
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {parties.map((party) => (
-              <Link
-                key={party.id}
-                href={`/party/${party.slug}`}
-                className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
-              >
-                <div 
-                  className="mb-4 flex size-12 items-center justify-center rounded-lg"
-                  style={{ backgroundColor: party.colors?.primary + '20' }}
+            {parties.map((party) => {
+              const primaryColor = party.colors?.primary || '#6b7280'
+              const secondaryColor = party.colors?.secondary || '#9ca3af'
+              
+              return (
+                <Link
+                  key={party.id}
+                  href={`/party/${party.slug}`}
+                  className="group rounded-lg border border-border bg-card overflow-hidden transition-all hover:border-primary hover:shadow-lg"
                 >
-                  <span 
-                    className="text-lg font-bold"
-                    style={{ color: party.colors?.primary }}
-                  >
-                    {party.abbreviation?.charAt(0) || party.name.charAt(0)}
-                  </span>
-              </div>
-              <h3 className="mb-2 font-semibold group-hover:text-primary">{party.name}</h3>
-              <p className="text-sm text-muted-foreground">Ver propuestas y documentos</p>
-            </Link>
-          ))}
-        </div>
+                  {/* Bandera con colores del partido */}
+                  <div 
+                    className="h-24 w-full border-b-2 border-border"
+                    style={{
+                      background: `linear-gradient(to bottom, ${primaryColor} 0%, ${primaryColor} 50%, ${secondaryColor} 50%, ${secondaryColor} 100%)`
+                    }}
+                  />
+                  
+                  {/* Información del partido */}
+                  <div className="p-4">
+                    <h3 className="mb-1 font-semibold group-hover:text-primary">{party.name}</h3>
+                    <p className="text-xs text-muted-foreground">Ver propuestas y documentos</p>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
         )}
       </section>
 
