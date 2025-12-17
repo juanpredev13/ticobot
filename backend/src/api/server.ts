@@ -41,6 +41,11 @@ export function createApp(): Express {
                 return callback(null, true);
             }
             
+            // In development, be more permissive for SSE
+            if (isDevelopment) {
+                return callback(null, true);
+            }
+            
             if (!origin || allowedOrigins.includes(origin)) {
                 callback(null, true);
             } else {
@@ -50,7 +55,8 @@ export function createApp(): Express {
         credentials: true,
         optionsSuccessStatus: 200,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control'],
+        exposedHeaders: ['Content-Type'],
     };
     app.use(cors(corsOptions));
     

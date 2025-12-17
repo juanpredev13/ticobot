@@ -77,6 +77,7 @@ export const chatService = {
         },
         body: JSON.stringify(backendRequest),
         signal: controller.signal,
+        credentials: 'include', // Include credentials for CORS
       });
 
       if (!response.ok) {

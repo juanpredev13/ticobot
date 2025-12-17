@@ -12,7 +12,7 @@ const logger = new Logger('CompareAPI');
 
 // Initialize RAG pipeline
 const ragPipeline = new RAGPipeline({
-    maxContextLength: 3000 // ~3k tokens for context
+    maxContextLength: 6000 // ~1.5k tokens per party (allows 2 chunks per party)
 });
 
 /**

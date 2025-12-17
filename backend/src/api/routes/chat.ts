@@ -2,14 +2,16 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { Logger } from '@ticobot/shared';
 import { RAGPipeline } from '../../rag/components/RAGPipeline.js';
-import { optionalAuth, checkRateLimit } from '../middleware/auth.middleware.js';
+import { optionalAuth } from '../middleware/auth.middleware.js';
+import { createSupabaseClient } from '../../db/supabase.js';
+import { ChatCacheService } from '../../db/services/chat-cache.service.js';
 
 const router: Router = Router();
 const logger = new Logger('ChatAPI');
 
 // Initialize RAG pipeline
 const ragPipeline = new RAGPipeline({
-    maxContextLength: 3000 // ~3k tokens for context
+    maxContextLength: 8000 // ~2k tokens for context (allows 2-3 chunks)
 });
 
 // Validation schema
@@ -143,11 +145,60 @@ const chatSchema = z.object({
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
+    const startTime = Date.now();
     try {
         // Validate request body
         const params = chatSchema.parse(req.body);
 
         logger.info(`Chat question: "${params.question}" (party=${params.party || 'all'}, topK=${params.topK})`);
+
+        // Initialize cache service
+        const supabase = createSupabaseClient();
+        const cacheService = new ChatCacheService(supabase);
+
+        // Check cache FIRST - this avoids ALL embeddings and LLM calls
+        logger.info(`🔍 Checking cache for question: "${params.question}"`);
+        const cached = await cacheService.getCached(
+            params.question,
+            params.party,
+            params.topK,
+            params.minRelevanceScore
+        );
+
+        if (cached) {
+            logger.info(`✅ Cache HIT - Skipping embeddings & LLM calls for question: "${params.question}"`);
+            
+            const processingTime = Date.now() - startTime;
+            logger.info(`Cache served in ${processingTime}ms (saved ~5-10s of RAG processing)`);
+
+            return res.json({
+                answer: cached.answer,
+                sources: cached.sources.map((source: any) => ({
+                    id: source.id,
+                    content: source.content,
+                    party: source.party,
+                    document: source.document,
+                    page: source.pageNumber ||
+                          (source.pageRange ?
+                            `${source.pageRange.start}-${source.pageRange.end}` :
+                            null),
+                    relevanceScore: source.relevance || 0
+                })),
+                metadata: {
+                    model: cached.metadata.model || 'cached',
+                    tokensUsed: cached.metadata.tokensUsed || 0,
+                    sourcesCount: cached.sources.length,
+                    processingTime,
+                    cached: true
+                },
+                filters: {
+                    party: params.party || null,
+                    minRelevanceScore: params.minRelevanceScore
+                }
+            });
+        }
+
+        logger.info(`❌ Cache MISS - Will generate embeddings & use LLM for question: "${params.question}"`);
 
         // Process query through RAG pipeline
         const result = await ragPipeline.query(params.question, {
@@ -158,11 +209,42 @@ router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFun
             minRelevanceScore: params.minRelevanceScore
         });
 
-        logger.info(`Chat completed: ${result.sources.length} sources used, ${result.metadata.tokensUsed || 0} tokens`);
+        const processingTime = Date.now() - startTime;
+        logger.info(`Chat completed: ${result.sources.length} sources used, ${result.metadata.tokensUsed || 0} tokens in ${processingTime}ms`);
+
+        // Prepare sources for response and cache
+        const sources = result.sources.map(source => ({
+            id: source.id,
+            content: source.content,
+            party: source.party,
+            document: source.document,
+            pageNumber: source.pageNumber,
+            pageRange: source.pageRange,
+            relevance: source.relevance || 0
+        }));
+
+        // Store in cache (async, don't wait)
+        cacheService.setCached(
+            params.question,
+            result.answer,
+            sources,
+            {
+                processingTime,
+                tokensUsed: result.metadata.tokensUsed || 0,
+                model: result.metadata.model,
+                // Cache for 7 days by default (can be made configurable)
+                expiresInHours: 24 * 7,
+            },
+            params.party,
+            params.topK,
+            params.minRelevanceScore
+        ).catch(err => {
+            logger.warn('Failed to cache chat result:', err);
+        });
 
         res.json({
             answer: result.answer,
-            sources: result.sources.map(source => ({
+            sources: sources.map(source => ({
                 id: source.id,
                 content: source.content,
                 party: source.party,
@@ -177,7 +259,8 @@ router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFun
                 model: result.metadata.model,
                 tokensUsed: result.metadata.tokensUsed || 0,
                 sourcesCount: result.sources.length,
-                processingTime: result.metadata.queryTime
+                processingTime,
+                cached: false
             },
             filters: {
                 party: params.party || null,
@@ -197,6 +280,36 @@ router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFun
         logger.error('Chat error:', error);
         next(error);
     }
+});
+
+/**
+ * Handle OPTIONS preflight request for streaming endpoint
+ */
+router.options('/stream', (req: Request, res: Response) => {
+    const origin = req.headers.origin || req.headers.referer;
+    const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const allowedOrigins = isDevelopment
+        ? [
+            clientUrl,
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:3001',
+          ]
+        : [clientUrl];
+
+    // Allow all origins in development for SSE
+    if (isDevelopment) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    } else if (origin && allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+    res.status(200).end();
 });
 
 /**
@@ -246,16 +359,113 @@ router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFun
  *         description: Validation error
  */
 router.post('/stream', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
+    const startTime = Date.now();
     try {
         // Validate request body
         const params = chatSchema.parse(req.body);
 
         logger.info(`Chat stream question: "${params.question}"`);
 
+        // Set up CORS headers for SSE (must be set before any data is sent)
+        // Note: CORS middleware should handle this, but we set it explicitly for SSE
+        const origin = req.headers.origin || req.headers.referer;
+        const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
+        const isDevelopment = process.env.NODE_ENV !== 'production';
+        const allowedOrigins = isDevelopment
+            ? [
+                clientUrl,
+                'http://localhost:3000',
+                'http://localhost:3001',
+                'http://127.0.0.1:3000',
+                'http://127.0.0.1:3001',
+              ]
+            : [clientUrl];
+
+        // Set CORS headers - allow all origins in development for SSE
+        if (isDevelopment) {
+            res.setHeader('Access-Control-Allow-Origin', origin || '*');
+        } else if (origin && allowedOrigins.includes(origin)) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+        }
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Type');
+
         // Set up SSE headers
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+
+        // Initialize cache service
+        const supabase = createSupabaseClient();
+        const cacheService = new ChatCacheService(supabase);
+
+        // Check cache FIRST
+        logger.info(`🔍 Checking cache for stream question: "${params.question}"`);
+        const cached = await cacheService.getCached(
+            params.question,
+            params.party,
+            params.topK,
+            params.minRelevanceScore
+        );
+
+        if (cached) {
+            logger.info(`✅ Cache HIT - Streaming cached response for question: "${params.question}"`);
+            
+            // Send initial event
+            res.write(`data: ${JSON.stringify({ type: 'start', message: 'Loading cached response...' })}\n\n`);
+
+            // Send sources event
+            res.write(`data: ${JSON.stringify({
+                type: 'sources',
+                sources: cached.sources.map((source: any) => ({
+                    id: source.id,
+                    content: source.content,
+                    party: source.party,
+                    document: source.document,
+                    page: source.pageNumber ||
+                          (source.pageRange ?
+                            `${source.pageRange.start}-${source.pageRange.end}` :
+                            null),
+                    relevanceScore: source.relevance || 0
+                }))
+            })}\n\n`);
+
+            // Stream the cached answer as chunks
+            const words = cached.answer.split(' ');
+            const chunkSize = 10; // Words per chunk
+
+            for (let i = 0; i < words.length; i += chunkSize) {
+                const chunk = words.slice(i, i + chunkSize).join(' ');
+                res.write(`data: ${JSON.stringify({
+                    type: 'chunk',
+                    content: chunk + (i + chunkSize < words.length ? ' ' : '')
+                })}\n\n`);
+
+                // Small delay for demonstration
+                await new Promise(resolve => setTimeout(resolve, 30));
+            }
+
+            const processingTime = Date.now() - startTime;
+            // Send completion event
+            res.write(`data: ${JSON.stringify({
+                type: 'done',
+                metadata: {
+                    model: cached.metadata.model || 'cached',
+                    tokensUsed: cached.metadata.tokensUsed || 0,
+                    sourcesCount: cached.sources.length,
+                    processingTime,
+                    cached: true
+                }
+            })}\n\n`);
+
+            res.end();
+            return;
+        }
+
+        logger.info(`❌ Cache MISS - Will generate embeddings & use LLM for stream question: "${params.question}"`);
 
         // Send initial event
         res.write(`data: ${JSON.stringify({ type: 'start', message: 'Processing query...' })}\n\n`);
@@ -270,10 +480,21 @@ router.post('/stream', optionalAuth, async (req: Request, res: Response, next: N
                 minRelevanceScore: params.minRelevanceScore
             });
 
+            // Prepare sources for response and cache
+            const sources = result.sources.map(source => ({
+                id: source.id,
+                content: source.content,
+                party: source.party,
+                document: source.document,
+                pageNumber: source.pageNumber,
+                pageRange: source.pageRange,
+                relevance: source.relevance || 0
+            }));
+
             // Send sources event
             res.write(`data: ${JSON.stringify({
                 type: 'sources',
-                sources: result.sources.map(source => ({
+                sources: sources.map(source => ({
                     id: source.id,
                     content: source.content,
                     party: source.party,
@@ -302,6 +523,27 @@ router.post('/stream', optionalAuth, async (req: Request, res: Response, next: N
                 await new Promise(resolve => setTimeout(resolve, 50));
             }
 
+            const processingTime = Date.now() - startTime;
+
+            // Store in cache (async, don't wait)
+            cacheService.setCached(
+                params.question,
+                result.answer,
+                sources,
+                {
+                    processingTime,
+                    tokensUsed: result.metadata.tokensUsed || 0,
+                    model: result.metadata.model,
+                    // Cache for 7 days by default
+                    expiresInHours: 24 * 7,
+                },
+                params.party,
+                params.topK,
+                params.minRelevanceScore
+            ).catch(err => {
+                logger.warn('Failed to cache stream result:', err);
+            });
+
             // Send completion event
             res.write(`data: ${JSON.stringify({
                 type: 'done',
@@ -309,7 +551,8 @@ router.post('/stream', optionalAuth, async (req: Request, res: Response, next: N
                     model: result.metadata.model,
                     tokensUsed: result.metadata.tokensUsed || 0,
                     sourcesCount: result.sources.length,
-                    processingTime: result.metadata.queryTime
+                    processingTime,
+                    cached: false
                 }
             })}\n\n`);
 
