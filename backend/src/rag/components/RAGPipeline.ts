@@ -109,21 +109,50 @@ export class RAGPipeline {
             });
 
             // Build sources (exclude metadata documents from displayed sources)
-            const sources = searchResults
-                .filter(result => {
-                    const documentId = result.document.metadata?.documentId || '';
-                    // Exclude metadata documents from sources but keep them in context
-                    return !EXCLUDED_FROM_SOURCES.includes(documentId);
-                })
-                .map(result => ({
+            const filteredResults = searchResults.filter(result => {
+                const documentId = result.document.metadata?.documentId || '';
+                // Exclude metadata documents from sources but keep them in context
+                return !EXCLUDED_FROM_SOURCES.includes(documentId);
+            });
+
+            // Normalize scores: scale so the highest score becomes 1.0 (100%)
+            // This makes the UI more intuitive - best match always shows 100%
+            const maxScore = filteredResults.length > 0 
+                ? Math.max(...filteredResults.map(r => r.score))
+                : 1.0;
+            
+            const minScore = filteredResults.length > 0
+                ? Math.min(...filteredResults.map(r => r.score))
+                : 0.0;
+
+            // Normalize: map [minScore, maxScore] to [0.5, 1.0] range
+            // This ensures even lower scores are visible but best is always 100%
+            const normalizedSources = filteredResults.map(result => {
+                // If all scores are similar, don't normalize too aggressively
+                const scoreRange = maxScore - minScore;
+                let normalizedRelevance: number;
+                
+                if (scoreRange < 0.1) {
+                    // Scores are very similar, use original score but boost it
+                    normalizedRelevance = Math.min(1.0, result.score * 1.5);
+                } else {
+                    // Normalize: (score - min) / (max - min) * 0.5 + 0.5
+                    // Maps to [0.5, 1.0] range, ensuring best is 1.0
+                    normalizedRelevance = ((result.score - minScore) / scoreRange) * 0.5 + 0.5;
+                }
+                
+                return {
                     id: result.document.id,
                     content: result.document.content.substring(0, 200) + '...',
                     party: result.document.metadata?.partyId || result.document.metadata?.party || 'Unknown',
                     document: result.document.metadata?.title || result.document.metadata?.documentId || 'Unknown',
-                    relevance: result.score,
+                    relevance: normalizedRelevance,
                     pageNumber: result.document.metadata?.pageNumber,
                     pageRange: result.document.metadata?.pageRange,
-                }));
+                };
+            });
+
+            const sources = normalizedSources;
 
             const queryTime = Date.now() - startTime;
             this.logger.info(`Query completed in ${queryTime}ms`);

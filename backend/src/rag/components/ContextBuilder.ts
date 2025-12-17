@@ -8,7 +8,7 @@ export class ContextBuilder {
     private logger: Logger;
     private maxContextLength: number;
 
-    constructor(maxContextLength: number = 4000) {
+    constructor(maxContextLength: number = 8000) {
         this.logger = new Logger('ContextBuilder');
         this.maxContextLength = maxContextLength;
     }
@@ -98,7 +98,27 @@ export class ContextBuilder {
         const party = metadata.partyId || metadata.party || 'Unknown';
         const document = metadata.title || metadata.documentId || 'Unknown Document';
 
-        return `[Source ${index}] ${party} - ${document}\n${content}`;
+        // Limit individual chunk size to allow more diverse chunks in context
+        // This optimizes token usage while maintaining information diversity
+        const maxChunkContentSize = 2500; // ~600 tokens per chunk
+        let processedContent = content;
+        
+        if (content.length > maxChunkContentSize) {
+            // Try to truncate at a paragraph boundary if possible
+            const truncated = content.substring(0, maxChunkContentSize);
+            const lastNewline = truncated.lastIndexOf('\n');
+            const lastPeriod = truncated.lastIndexOf('.');
+            
+            // Prefer truncating at paragraph (newline) or sentence (period) boundary
+            const truncateAt = lastNewline > maxChunkContentSize * 0.8
+                ? lastNewline
+                : (lastPeriod > maxChunkContentSize * 0.8 ? lastPeriod : maxChunkContentSize);
+            
+            processedContent = content.substring(0, truncateAt) + '...';
+            this.logger.debug(`Chunk ${index} truncated from ${content.length} to ${processedContent.length} chars`);
+        }
+
+        return `[Source ${index}] ${party} - ${document}\n${processedContent}`;
     }
 
     /**

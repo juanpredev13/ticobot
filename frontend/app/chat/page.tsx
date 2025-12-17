@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Send, Loader2, MessageSquare, FileText, ExternalLink, Trash2, StopCircle } from "lucide-react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -354,7 +356,33 @@ function ChatContent() {
                                 : "border border-border bg-card"
                             }`}
                           >
-                            <p className="text-sm leading-relaxed">{message.content}</p>
+                            <div className="prose prose-sm max-w-none dark:prose-invert">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  h2: ({ node, ...props }) => (
+                                    <h2 className="mt-6 mb-3 text-lg font-semibold text-foreground border-b border-border pb-2" {...props} />
+                                  ),
+                                  h3: ({ node, ...props }) => (
+                                    <h3 className="mt-4 mb-2 text-base font-semibold text-foreground" {...props} />
+                                  ),
+                                  p: ({ node, ...props }) => (
+                                    <p className="mb-3 text-sm leading-relaxed text-foreground" {...props} />
+                                  ),
+                                  ul: ({ node, ...props }) => (
+                                    <ul className="mb-3 ml-4 list-disc space-y-1 text-sm" {...props} />
+                                  ),
+                                  li: ({ node, ...props }) => (
+                                    <li className="text-foreground" {...props} />
+                                  ),
+                                  strong: ({ node, ...props }) => (
+                                    <strong className="font-semibold text-foreground" {...props} />
+                                  ),
+                                }}
+                              >
+                                {message.content}
+                              </ReactMarkdown>
+                            </div>
                           </div>
 
                           {/* Sources (only for assistant messages) */}
