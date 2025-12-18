@@ -49,8 +49,8 @@ const MISSING_PARTIES = [
         abbreviation: 'ACRM',
         slug: 'aqui-costa-rica-manda',
         colors: {
-            primary: '#457B9D',
-            secondary: '#A8DADC'
+            primary: '#dc793e',
+            secondary: '#263056'
         },
     },
     {
@@ -58,8 +58,8 @@ const MISSING_PARTIES = [
         abbreviation: 'PA',
         slug: 'partido-avanza',
         colors: {
-            primary: '#1D3557',
-            secondary: '#F1FAEE'
+            primary: '#263056',
+            secondary: '#263056'
         },
     },
     {

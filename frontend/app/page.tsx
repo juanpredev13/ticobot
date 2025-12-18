@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Search, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useDocuments, useHealth, useParties, useCandidates } from "@/lib/hooks"
 import { PageErrorBoundary } from "@/components/page-error-boundary"
+import { EntityGrid } from "@/components/entity-grid"
+import { PartyCard } from "@/components/party-card"
 
 function HomeContent() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -28,16 +30,6 @@ function HomeContent() {
   useEffect(() => {
     setIsMounted(true)
   }, [])
-
-  // Generate unique IDs for skeleton loaders (stable across renders)
-  const partySkeletonIds = useMemo(() => 
-    Array.from({ length: 8 }, (_, i) => `party-skeleton-${i}-${Date.now()}`),
-    []
-  )
-  const candidateSkeletonIds = useMemo(() => 
-    Array.from({ length: 8 }, (_, i) => `candidate-skeleton-${i}-${Date.now()}`),
-    []
-  )
 
   // Get parties from API or use empty array
   const parties = partiesData?.parties || []
@@ -162,132 +154,20 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* Party Grid Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-bold">Partidos políticos disponibles</h2>
-          <p className="text-muted-foreground">Selecciona los partidos que quieres comparar</p>
-        </div>
-
-        {partiesLoading ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {partySkeletonIds.map((id) => (
-              <div
-                key={id}
-                className="rounded-lg border border-border bg-card p-6"
-            >
-              <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-muted">
-                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                </div>
-                <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
-                <div className="h-4 w-1/2 rounded bg-muted" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {parties.map((party) => {
-              const primaryColor = party.colors?.primary || '#6b7280'
-              const secondaryColor = party.colors?.secondary || '#9ca3af'
-              
-              return (
-                <Link
-                  key={party.id}
-                  href={`/party/${party.slug}`}
-                  className="group rounded-lg border border-border bg-card overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                >
-                  {/* Bandera con colores del partido */}
-                  <div 
-                    className="h-24 w-full border-b-2 border-border"
-                    style={{
-                      background: `linear-gradient(to bottom, ${primaryColor} 0%, ${primaryColor} 50%, ${secondaryColor} 50%, ${secondaryColor} 100%)`
-                    }}
-                  />
-                  
-                  {/* Información del partido */}
-                  <div className="p-4">
-                    <h3 className="mb-1 font-semibold group-hover:text-primary">{party.name}</h3>
-                    <p className="text-xs text-muted-foreground">Ver propuestas y documentos</p>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* Candidates Section */}
-      <section className="container mx-auto px-4 py-16 border-t border-border">
-        <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-bold">Candidatos principales</h2>
-          <p className="text-muted-foreground">Conoce a los candidatos y sus propuestas</p>
-        </div>
-
-        {candidatesLoading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {candidateSkeletonIds.map((id) => (
-              <div
-                key={id}
-                className="rounded-lg border border-border bg-card p-6"
-              >
-                <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
-                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                </div>
-                <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
-                <div className="mb-2 h-4 w-1/2 rounded bg-muted" />
-                <div className="h-4 w-2/3 rounded bg-muted" />
-              </div>
-            ))}
-          </div>
-        ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {candidates.map((candidate) => {
-              // Get party info for this candidate
-              const candidateParty = parties.find(p => p.id === candidate.party_id)
-              const partyName = candidateParty?.name || 'Sin partido'
-              
-              return (
-            <Link
-              key={candidate.id}
-                  href={`/candidate/${candidate.slug}`}
-              className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
-            >
-                  {candidate.photo_url ? (
-                    <div className="relative mb-4 flex size-16 items-center justify-center overflow-hidden rounded-full bg-muted">
-                      <img
-                        src={candidate.photo_url}
-                        alt={candidate.name}
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          // Fallback to initials if image fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const parent = target.parentElement;
-                          if (parent) {
-                            parent.innerHTML = `<span class="text-xl font-bold text-muted-foreground">${candidate.name.split(" ")[0].charAt(0)}${candidate.name.split(" ")[1]?.charAt(0) || ''}</span>`;
-                          }
-                        }}
-                      />
-                    </div>
-                  ) : (
-              <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
-                <span className="text-xl font-bold text-muted-foreground">
-                  {candidate.name.split(" ")[0].charAt(0)}
-                        {candidate.name.split(" ")[1]?.charAt(0) || ''}
-                </span>
-              </div>
-                  )}
-              <h3 className="mb-1 font-semibold group-hover:text-primary">{candidate.name}</h3>
-                  {candidateParty && (
-                    <p className="mb-2 text-sm font-medium text-primary">{candidateParty.abbreviation || partyName}</p>
-                  )}
-              <p className="text-sm text-muted-foreground">{candidate.position}</p>
-            </Link>
-              )
-            })}
-        </div>
-        )}
-      </section>
+      {/* Partidos y Candidatos Section */}
+      <EntityGrid
+        title="Partidos políticos y sus candidatos presidenciales"
+        description="Explora los partidos y sus propuestas para las elecciones 2026"
+        isLoading={partiesLoading || candidatesLoading}
+        items={parties}
+        renderItem={(party) => {
+          // Find presidential candidate for this party
+          const presidentialCandidate = candidates.find(
+            c => c.party_id === party.id && c.position === 'Candidato a Presidente'
+          )
+          return <PartyCard party={party} candidate={presidentialCandidate} />
+        }}
+      />
 
       {/* Features Section */}
       <section className="border-t border-border bg-muted/30 py-16">
