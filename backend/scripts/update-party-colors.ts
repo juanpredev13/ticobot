@@ -79,6 +79,38 @@ const PARTY_COLOR_UPDATES = [
             primary: '#CAA705',
             secondary: '#150857'
         }
+    },
+    {
+        slug: 'pueblo-soberano',
+        name: 'Pueblo Soberano',
+        colors: {
+            primary: '#1AB0BE',
+            secondary: '#FFFFFF'
+        }
+    },
+    {
+        slug: 'progreso-social-democratico',
+        name: 'Progreso Social Democrático',
+        colors: {
+            primary: '#3E9C27',
+            secondary: '#152C74'
+        }
+    },
+    {
+        slug: 'justicia-social-costarricense',
+        name: 'Justicia Social Costarricense',
+        colors: {
+            primary: '#F58120',
+            secondary: '#019548'
+        }
+    },
+    {
+        slug: 'union-costarricense-democratica',
+        name: 'Unión Costarricense Democrática',
+        colors: {
+            primary: '#50C1AF',
+            secondary: '#552499'
+        }
     }
 ];
 

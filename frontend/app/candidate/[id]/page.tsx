@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCandidateBySlug } from "@/lib/hooks"
-import { SiteHeader } from "@/components/site-header"
 
 export default function CandidatePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -19,7 +18,6 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <SiteHeader />
         <div className="container mx-auto px-4 py-8">
           <Skeleton className="mb-6 h-10 w-32" />
           <div className="mb-8">
@@ -60,7 +58,6 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
   if (isError || !data?.candidate) {
     return (
       <div className="min-h-screen bg-background">
-        <SiteHeader />
         <div className="container mx-auto px-4 py-8">
           <Card className="border-destructive">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
@@ -89,8 +86,6 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="min-h-screen bg-background">
-      <SiteHeader />
-
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
         {party && (
