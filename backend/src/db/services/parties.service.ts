@@ -86,11 +86,15 @@ export class PartiesService {
 
   /**
    * Get all parties
+   * Returns top 5 parties first, then remaining parties alphabetically
    */
   async findAll(options?: {
     limit?: number;
     offset?: number;
   }): Promise<Party[]> {
+    // Hardcoded top 5 party slugs (in priority order)
+    const TOP_5_SLUGS = ['pln', 'pusc', 'cac', 'fa', 'pueblo-soberano'];
+
     let query = this.supabase
       .from('parties')
       .select('*')
@@ -108,7 +112,31 @@ export class PartiesService {
     const { data, error } = await query;
 
     if (error) throw error;
-    return (data || []) as Party[];
+
+    const parties = (data || []) as Party[];
+
+    // Reorder: top 5 first, then remaining alphabetically
+    const top5Parties: Party[] = [];
+    const otherParties: Party[] = [];
+
+    // Separate parties into top 5 and others
+    for (const party of parties) {
+      if (TOP_5_SLUGS.includes(party.slug)) {
+        top5Parties.push(party);
+      } else {
+        otherParties.push(party);
+      }
+    }
+
+    // Sort top 5 by their position in TOP_5_SLUGS array
+    top5Parties.sort((a, b) => {
+      const indexA = TOP_5_SLUGS.indexOf(a.slug);
+      const indexB = TOP_5_SLUGS.indexOf(b.slug);
+      return indexA - indexB;
+    });
+
+    // Return top 5 first, then others (already alphabetically sorted)
+    return [...top5Parties, ...otherParties];
   }
 
   /**
