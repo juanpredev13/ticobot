@@ -10,6 +10,8 @@
 
 **⭐ If you find this project useful, please consider sponsoring its development! ⭐**
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/juanpredev13/ticobot)
+
 </div>
 
 ---
