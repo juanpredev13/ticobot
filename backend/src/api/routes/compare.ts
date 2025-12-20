@@ -272,8 +272,7 @@ router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFun
             })),
             {
                 processingTime,
-                // Cache for 7 days by default (can be made configurable)
-                expiresInHours: 24 * 7,
+                // Cache never expires (expiresInHours not set = null = never expires)
             }
         ).catch(err => {
             logger.warn('Failed to cache comparison result:', err);

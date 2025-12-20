@@ -12,7 +12,7 @@ import { Logger } from '@ticobot/shared';
 
 const logger = new Logger('PrecomputeComparisons');
 
-// Common topics to pre-compute
+// Common topics to pre-compute (8 temas principales)
 const COMMON_TOPICS = [
   'Educación',
   'Salud',
@@ -22,17 +22,32 @@ const COMMON_TOPICS = [
   'Economía',
   'Infraestructura',
   'Corrupción',
-  'Vivienda',
-  'Transporte',
 ];
 
-// Common party combinations (top 4 parties by popularity)
+// Party slugs for the 5 selected parties
+const PARTY_SLUGS = {
+  PLN: 'pln',
+  PUSC: 'pusc',
+  CAC: 'cac',
+  FA: 'fa',
+  PUEBLO_SOBERANO: 'pueblo-soberano',
+};
+
+// Common party combinations (individuales + top 5 combinaciones)
 const COMMON_PARTY_COMBINATIONS = [
-  ['pln', 'pusc', 'pac', 'fa'], // Top 4
-  ['pln', 'pusc'], // Top 2
-  ['pln', 'pac'], // PLN vs PAC
-  ['pusc', 'pac'], // PUSC vs PAC
-  ['pln', 'pusc', 'pac'], // Top 3
+  // Individuales (5 partidos)
+  [PARTY_SLUGS.PLN],
+  [PARTY_SLUGS.PUSC],
+  [PARTY_SLUGS.CAC],
+  [PARTY_SLUGS.FA],
+  [PARTY_SLUGS.PUEBLO_SOBERANO],
+
+  // Combinaciones (5 combinaciones principales)
+  [PARTY_SLUGS.PLN, PARTY_SLUGS.PUSC, PARTY_SLUGS.CAC, PARTY_SLUGS.FA], // Top 4
+  [PARTY_SLUGS.PLN, PARTY_SLUGS.PUSC],                                   // Tradicionales
+  [PARTY_SLUGS.PLN, PARTY_SLUGS.CAC],                                    // PLN vs nuevo
+  [PARTY_SLUGS.PUSC, PARTY_SLUGS.CAC],                                   // PUSC vs nuevo
+  [PARTY_SLUGS.PLN, PARTY_SLUGS.PUSC, PARTY_SLUGS.CAC],                 // Top 3
 ];
 
 async function precomputeComparison(
@@ -41,9 +56,16 @@ async function precomputeComparison(
   ragPipeline: RAGPipeline,
   cacheService: ComparisonsCacheService,
   partiesService: PartiesService
-): Promise<void> {
+): Promise<{ skipped: boolean }> {
   try {
     logger.info(`Pre-computing: "${topic}" for parties: ${partySlugs.join(', ')}`);
+
+    // Check if already cached
+    const existingCache = await cacheService.getCached(topic, partySlugs);
+    if (existingCache) {
+      logger.info(`⏭️  SKIPPED: "${topic}" for ${partySlugs.join(', ')} - Already cached and not expired`);
+      return { skipped: true };
+    }
 
     // Map slugs to document party IDs (abbreviations)
     const partyAbbreviations: string[] = [];
@@ -114,14 +136,16 @@ async function precomputeComparison(
       enrichedComparisons,
       {
         processingTime: Date.now() - startTime,
-        expiresInHours: 24 * 7, // 7 days
+        // Cache never expires (expiresInHours not set = null = never expires)
       }
     );
 
     const processingTime = Date.now() - startTime;
     logger.info(`✅ Cached: "${topic}" (${partySlugs.length} parties) in ${processingTime}ms`);
+    return { skipped: false };
   } catch (error) {
     logger.error(`❌ Failed to pre-compute "${topic}" for ${partySlugs.join(', ')}:`, error);
+    throw error;
   }
 }
 
@@ -135,6 +159,7 @@ async function main() {
 
   let total = 0;
   let success = 0;
+  let skipped = 0;
   let failed = 0;
 
   // Pre-compute all combinations
@@ -142,17 +167,24 @@ async function main() {
     for (const partyCombination of COMMON_PARTY_COMBINATIONS) {
       total++;
       try {
-        await precomputeComparison(
+        const result = await precomputeComparison(
           topic,
           partyCombination,
           ragPipeline,
           cacheService,
           partiesService
         );
-        success++;
-        
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        if (result.skipped) {
+          skipped++;
+        } else {
+          success++;
+        }
+
+        // Small delay to avoid rate limiting (only if not skipped)
+        if (!result.skipped) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       } catch (error) {
         failed++;
         logger.error(`Failed combination: ${topic} + ${partyCombination.join(', ')}:`, error instanceof Error ? error.message : String(error));
@@ -162,7 +194,8 @@ async function main() {
 
   logger.info(`\n📊 Pre-computation complete:`);
   logger.info(`   Total: ${total}`);
-  logger.info(`   ✅ Success: ${success}`);
+  logger.info(`   ✅ Newly cached: ${success}`);
+  logger.info(`   ⏭️  Skipped (already cached): ${skipped}`);
   logger.info(`   ❌ Failed: ${failed}`);
   logger.info(`\n💡 Cache is now warmed up! Users will get instant responses for these comparisons.`);
 
