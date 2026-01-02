@@ -14,3 +14,4 @@ SELECT
     COUNT(*) FILTER (WHERE expires_at IS NOT NULL) as still_expire
 FROM comparisons_cache;
 
+

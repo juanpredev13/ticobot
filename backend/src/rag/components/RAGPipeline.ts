@@ -3,6 +3,8 @@ import { SemanticSearcher } from './SemanticSearcher.js';
 import { ContextBuilder } from './ContextBuilder.js';
 import { ResponseGenerator } from './ResponseGenerator.js';
 import { Logger, type SearchResult } from '@ticobot/shared';
+import { createSupabaseClient } from '../../db/supabase.js';
+import { PartiesService } from '../../db/services/parties.service.js';
 
 // Document IDs to exclude from displayed sources (but keep in context for LLM)
 const EXCLUDED_FROM_SOURCES = ['partidos-candidatos-2026'];
@@ -264,7 +266,7 @@ export class RAGPipeline {
     /**
      * Compare multiple parties on a specific topic
      * @param question - Topic/question to compare
-     * @param partyIds - Array of party IDs to compare
+     * @param partyIds - Array of party IDs to compare (can be abbreviations or UUIDs)
      * @param options - Query options
      * @returns Comparison results
      */
@@ -293,18 +295,90 @@ export class RAGPipeline {
         const embedding = await this.embedder.embed(question);
         const comparisons = [];
 
+        // Initialize services to resolve party UUIDs from abbreviations
+        const supabase = createSupabaseClient();
+        const partiesService = new PartiesService(supabase);
+
         for (const partyId of partyIds) {
-            const searchResults = await this.searcher.searchHybrid(
+            // Try to resolve party UUID from slug
+            // If partyId is already a UUID (contains dashes), use it directly
+            // Otherwise, try to find the party by slug (lowercase)
+            let filterPartyId: string | undefined = partyId;
+            
+            if (!partyId.includes('-')) {
+                // Not a UUID, try to find party by slug
+                try {
+                    const slug = partyId.toLowerCase();
+                    const party = await partiesService.findBySlug(slug);
+                    if (party?.id) {
+                        filterPartyId = party.id;
+                        this.logger.info(`Resolved party slug "${slug}" to UUID: ${party.id}`);
+                    } else {
+                        // Fallback: try abbreviation if slug not found
+                        const partyByAbbrev = await partiesService.findByAbbreviation(partyId);
+                        if (partyByAbbrev?.id) {
+                            filterPartyId = partyByAbbrev.id;
+                            this.logger.info(`Resolved party abbreviation "${partyId}" to UUID: ${partyByAbbrev.id}`);
+                        } else {
+                            // Final fallback: use abbreviation as-is (for backwards compatibility)
+                            filterPartyId = partyId;
+                            this.logger.warn(`Party not found for slug "${slug}" or abbreviation "${partyId}", using as-is`);
+                        }
+                    }
+                } catch (error) {
+                    // If lookup fails, use partyId as-is
+                    filterPartyId = partyId;
+                    this.logger.warn(`Error looking up party "${partyId}":`, error);
+                }
+            }
+
+            // Try with default threshold first
+            let searchResults = await this.searcher.searchHybrid(
                 question,
                 embedding,
                 options?.topKPerParty ?? 3,
                 {
                     vectorWeight: 0.7,
                     keywordWeight: 0.3,
-                    partyId: partyId,
+                    minScore: 0.3, // Default threshold
+                    partyId: filterPartyId,
                     useQueryProcessing: true,
                 }
             );
+
+            // If no results, try with lower threshold (0.2) for better recall
+            if (searchResults.length === 0) {
+                this.logger.warn(`No results with threshold 0.3, trying lower threshold 0.2 for party ${partyId}`);
+                searchResults = await this.searcher.searchHybrid(
+                    question,
+                    embedding,
+                    options?.topKPerParty ?? 3,
+                    {
+                        vectorWeight: 0.7,
+                        keywordWeight: 0.3,
+                        minScore: 0.2, // Lower threshold for better recall
+                        partyId: filterPartyId,
+                        useQueryProcessing: true,
+                    }
+                );
+            }
+
+            // If still no results, try with even lower threshold (0.1) for very specific queries
+            if (searchResults.length === 0) {
+                this.logger.warn(`No results with threshold 0.2, trying lower threshold 0.1 for party ${partyId}`);
+                searchResults = await this.searcher.searchHybrid(
+                    question,
+                    embedding,
+                    options?.topKPerParty ?? 5, // Get more results
+                    {
+                        vectorWeight: 0.7,
+                        keywordWeight: 0.3,
+                        minScore: 0.1, // Very low threshold for maximum recall
+                        partyId: filterPartyId,
+                        useQueryProcessing: true,
+                    }
+                );
+            }
 
             if (searchResults.length > 0) {
                 const context = this.contextBuilder.build(searchResults, question);

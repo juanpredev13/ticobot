@@ -58,7 +58,8 @@ export default function ComparePage() {
 
   // Fetch parties list
   const { data: partiesData, isLoading: partiesLoading } = useParties()
-  const parties = partiesData?.parties || []
+  // Limit to top 5 parties only
+  const parties = (partiesData?.parties || []).slice(0, 5)
   
   // Create party color map
   const partyColorMap = createPartyColorMap(parties)
@@ -73,11 +74,11 @@ export default function ComparePage() {
     setIsMounted(true)
   }, [])
 
-  // Initialize with first two parties if available
+  // Initialize with all top 5 parties if available
   useEffect(() => {
     if (isMounted && parties.length > 0 && selectedParties.length === 0) {
-      const firstTwo = parties.slice(0, 2).map(p => p.slug)
-      setSelectedParties(firstTwo)
+      const allParties = parties.map(p => p.slug)
+      setSelectedParties(allParties)
     }
   }, [isMounted, parties, selectedParties.length])
 
@@ -101,7 +102,7 @@ export default function ComparePage() {
   }
 
   const addParty = (partyId: string) => {
-    if (selectedParties.length < 4 && !selectedParties.includes(partyId)) {
+    if (selectedParties.length < 5 && !selectedParties.includes(partyId)) {
       setSelectedParties([...selectedParties, partyId])
     }
   }
@@ -140,7 +141,7 @@ export default function ComparePage() {
         {/* Page Title */}
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-bold">Comparación de propuestas</h1>
-          <p className="text-muted-foreground">Compara las propuestas de hasta 4 partidos políticos lado a lado</p>
+          <p className="text-muted-foreground">Compara las propuestas de hasta 5 partidos políticos lado a lado</p>
         </div>
 
         {/* Controls Section */}
@@ -214,7 +215,7 @@ export default function ComparePage() {
                   </Badge>
                 )
               })}
-              {selectedParties.length < 4 && availableParties.length > 0 && (
+              {selectedParties.length < 5 && availableParties.length > 0 && (
                 <Select onValueChange={addParty}>
                   <SelectTrigger className="h-6 w-[200px] text-xs">
                     <Plus className="mr-1 size-3" />
@@ -401,7 +402,7 @@ export default function ComparePage() {
             </li>
             <li className="flex gap-2">
               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
-              <span>Añade hasta 4 partidos para comparar sus propuestas lado a lado</span>
+              <span>Añade hasta 5 partidos para comparar sus propuestas lado a lado</span>
             </li>
             <li className="flex gap-2">
               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />

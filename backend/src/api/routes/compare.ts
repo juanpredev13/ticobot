@@ -105,7 +105,7 @@ function determineProposalState(
 // Validation schema
 const compareSchema = z.object({
     topic: z.string().min(1, 'Topic cannot be empty').max(500, 'Topic too long'),
-    partyIds: z.array(z.string()).min(1, 'At least one party required').max(4, 'Maximum 4 parties allowed'),
+    partyIds: z.array(z.string()).min(1, 'At least one party required').max(5, 'Maximum 5 parties allowed'),
     topKPerParty: z.coerce.number().min(1).max(10).default(3),
     temperature: z.coerce.number().min(0).max(2).default(0.7),
 });
@@ -136,10 +136,10 @@ const compareSchema = z.object({
  *               partyIds:
  *                 type: array
  *                 minItems: 1
- *                 maxItems: 4
+ *                 maxItems: 5
  *                 items:
  *                   type: string
- *                 description: Array of party IDs to compare (max 4)
+ *                 description: Array of party IDs to compare (max 5)
  *                 example: ["pln", "pac", "fa"]
  *               topKPerParty:
  *                 type: number
@@ -237,15 +237,17 @@ router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFun
         logger.info(`❌ Cache MISS - Will generate embeddings & use LLM for topic: "${params.topic}"`);
 
         // Build party mapping for RAG processing
-        const { partyDetailsMap, partyAbbreviations } = await buildPartyMappingForRAG(
+        const { partyDetailsMap } = await buildPartyMappingForRAG(
             params.partyIds,
             partiesService
         );
 
-        // Use RAG pipeline to compare parties with abbreviations (not slugs)
+        // Use RAG pipeline to compare parties with slugs (will be resolved to UUIDs internally)
+        // Pass slugs directly so compareParties can resolve them to UUIDs
+        const partySlugs = params.partyIds.map(id => id.toLowerCase());
         const result = await ragPipeline.compareParties(
             params.topic,
-            partyAbbreviations,
+            partySlugs,
             {
                 topKPerParty: params.topKPerParty,
                 temperature: params.temperature
@@ -354,53 +356,46 @@ async function buildPartyDetailsMap(
 }
 
 /**
- * Build party details map and abbreviations for RAG processing
+ * Build party details map for RAG processing
+ * Returns map keyed by slug for easy lookup
  */
 async function buildPartyMappingForRAG(
     partyIds: string[],
     partiesService: PartiesService
 ): Promise<{
     partyDetailsMap: Map<string, { name: string; abbreviation: string; slug: string }>;
-    partyAbbreviations: string[];
 }> {
     const partyDetailsMap = new Map<string, { name: string; abbreviation: string; slug: string }>();
-    const partyAbbreviations: string[] = [];
 
     for (const partyId of partyIds) {
+        const slug = partyId.toLowerCase();
         try {
-            const party = await partiesService.findBySlug(partyId.toLowerCase());
-            if (party?.abbreviation) {
-                const documentPartyId = ABBREVIATION_TO_DOCUMENT_ID[party.abbreviation] || party.abbreviation;
-                partyDetailsMap.set(documentPartyId, {
+            const party = await partiesService.findBySlug(slug);
+            if (party) {
+                partyDetailsMap.set(slug, {
                     name: party.name,
-                    abbreviation: party.abbreviation,
-                    slug: partyId.toLowerCase()
+                    abbreviation: party.abbreviation || partyId.toUpperCase(),
+                    slug: slug
                 });
-                partyAbbreviations.push(documentPartyId);
             } else {
-                const abbrev = partyId.toUpperCase();
-                const documentPartyId = ABBREVIATION_TO_DOCUMENT_ID[abbrev] || abbrev;
-                partyDetailsMap.set(documentPartyId, {
+                // Fallback if party not found
+                partyDetailsMap.set(slug, {
                     name: partyId.toUpperCase(),
-                    abbreviation: abbrev,
-                    slug: partyId.toLowerCase()
+                    abbreviation: partyId.toUpperCase(),
+                    slug: slug
                 });
-                partyAbbreviations.push(documentPartyId);
             }
         } catch (error) {
             logger.warn(`Could not fetch party details for ${partyId}:`, error);
-            const abbrev = partyId.toUpperCase();
-            const documentPartyId = ABBREVIATION_TO_DOCUMENT_ID[abbrev] || abbrev;
-            partyDetailsMap.set(documentPartyId, {
+            partyDetailsMap.set(slug, {
                 name: partyId.toUpperCase(),
-                abbreviation: abbrev,
-                slug: partyId.toLowerCase()
+                abbreviation: partyId.toUpperCase(),
+                slug: slug
             });
-            partyAbbreviations.push(documentPartyId);
         }
     }
 
-    return { partyDetailsMap, partyAbbreviations };
+    return { partyDetailsMap };
 }
 
 /**
@@ -444,10 +439,12 @@ function enrichRAGComparisons(
             comparison.confidence
         );
 
-        const partyDetails = partyDetailsMap.get(comparison.party) || {
+        // comparison.party is now a slug (e.g., "pln")
+        const partySlug = comparison.party.toLowerCase();
+        const partyDetails = partyDetailsMap.get(partySlug) || {
             name: comparison.party.toUpperCase(),
             abbreviation: comparison.party.toUpperCase(),
-            slug: comparison.party.toLowerCase()
+            slug: partySlug
         };
 
         return {

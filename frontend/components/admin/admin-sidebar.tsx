@@ -12,6 +12,7 @@ import {
   BarChart3,
   Upload,
   Logs,
+  CheckCircle2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -32,6 +33,16 @@ const navItems: NavItem[] = [
     title: "Base de Datos",
     href: "/admin/database",
     icon: Database,
+  },
+  {
+    title: "Calidad de Datos",
+    href: "/admin/database/quality",
+    icon: CheckCircle2,
+  },
+  {
+    title: "Visor de Texto",
+    href: "/admin/database/text-viewer",
+    icon: FileText,
   },
   {
     title: "Estado del Sistema",

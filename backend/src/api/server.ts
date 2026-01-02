@@ -13,6 +13,8 @@ import chatRoutes from './routes/chat.js';
 import partiesRoutes from './routes/parties.js';
 import candidatesRoutes from './routes/candidates.js';
 import compareRoutes from './routes/compare.js';
+import qualityRoutes from './routes/quality.js';
+import textViewerRoutes from './routes/text-viewer.js';
 
 const logger = new Logger('Server');
 
@@ -91,6 +93,8 @@ export function createApp(): Express {
     app.use('/api/parties', partiesRoutes);
     app.use('/api/candidates', candidatesRoutes);
     app.use('/api/compare', compareRoutes);
+    app.use('/api/quality', qualityRoutes);
+    app.use('/api/text-viewer', textViewerRoutes);
 
     // Health check
     app.get('/health', (req: Request, res: Response) => {

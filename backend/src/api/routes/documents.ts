@@ -86,7 +86,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
         logger.info(`Listing documents: party=${params.party || 'all'}, limit=${params.limit}, offset=${params.offset}`);
 
-        // Build query
+        // Build query - first get documents, then enrich with party info
+        // Note: We can't use JOIN directly because some documents have party_id as TEXT (abbreviation)
+        // instead of UUID, so we'll fetch parties separately and merge
         let query = supabase
             .from('documents')
             .select('*', { count: 'exact' })
@@ -110,8 +112,53 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
         logger.info(`Found ${data?.length || 0} documents (total: ${count || 0})`);
 
+        // Fetch all parties to build a lookup map
+        const { data: partiesData } = await supabase
+            .from('parties')
+            .select('id, name, abbreviation, slug');
+
+        const partiesMap = new Map<string, any>();
+        partiesData?.forEach((party: any) => {
+            partiesMap.set(party.id, party);
+        });
+
+        // Transform documents to include party abbreviation
+        const documents = (data || []).map((doc: any) => {
+            // Check if party_id is a UUID (length 36 with dashes) or a string abbreviation
+            const isUUID = typeof doc.party_id === 'string' && 
+                          doc.party_id.length === 36 && 
+                          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(doc.party_id);
+            
+            let party = null;
+            let partyAbbreviation: string;
+            let partySlug: string | null = null;
+
+            if (isUUID) {
+                // party_id is a UUID, look it up in parties table
+                party = partiesMap.get(doc.party_id);
+                partyAbbreviation = party?.abbreviation || 'N/A';
+                partySlug = party?.slug || null;
+            } else {
+                // party_id is a string abbreviation (like "PPSO", "PLN")
+                partyAbbreviation = doc.party_id;
+                // Try to find party by abbreviation
+                party = Array.from(partiesMap.values()).find((p: any) => 
+                    p.abbreviation?.toUpperCase() === doc.party_id.toUpperCase()
+                );
+                if (party) {
+                    partySlug = party.slug;
+                }
+            }
+
+            return {
+                ...doc,
+                party_abbreviation: partyAbbreviation,
+                party_slug: partySlug,
+            };
+        });
+
         res.json({
-            documents: data || [],
+            documents,
             pagination: {
                 total: count || 0,
                 limit: params.limit,

@@ -13,6 +13,8 @@ interface Document {
   title: string
   party_id: string
   party_name: string
+  party_abbreviation?: string
+  party_slug?: string
   page_count: number
   file_size_bytes: number
   created_at: string
@@ -21,6 +23,7 @@ interface Document {
 interface ChunkStats {
   party_id: string
   party_name: string
+  party_abbreviation: string
   chunk_count: number
   has_embeddings: boolean
 }
@@ -52,9 +55,14 @@ export function DatabaseStatus() {
           totalChunkCount += chunkCount
 
           if (!stats[doc.party_id]) {
+            // Use abbreviation if available, otherwise use party_id (but only if it's not a UUID)
+            const partyAbbreviation = doc.party_abbreviation || 
+              (doc.party_id && doc.party_id.length <= 10 ? doc.party_id : 'N/A');
+            
             stats[doc.party_id] = {
               party_id: doc.party_id,
               party_name: doc.party_name,
+              party_abbreviation: partyAbbreviation,
               chunk_count: 0,
               has_embeddings: false
             }
@@ -171,7 +179,7 @@ export function DatabaseStatus() {
               ) : (
                 chunkStats.map((stat) => (
                   <TableRow key={stat.party_id}>
-                    <TableCell className="font-medium">{stat.party_id}</TableCell>
+                    <TableCell className="font-medium">{stat.party_abbreviation}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{stat.party_name}</TableCell>
                     <TableCell className="text-right font-mono">{stat.chunk_count.toLocaleString()}</TableCell>
                     <TableCell>
@@ -213,7 +221,9 @@ export function DatabaseStatus() {
               <TableBody>
                 {documents.map((doc) => (
                   <TableRow key={doc.id}>
-                    <TableCell className="font-medium">{doc.party_id}</TableCell>
+                    <TableCell className="font-medium">
+                      {doc.party_abbreviation || (doc.party_id && doc.party_id.length <= 10 ? doc.party_id : 'N/A')}
+                    </TableCell>
                     <TableCell className="text-sm">{doc.title}</TableCell>
                     <TableCell className="text-right">{doc.page_count || '-'}</TableCell>
                     <TableCell className="text-right text-xs text-muted-foreground">

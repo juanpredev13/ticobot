@@ -91,6 +91,33 @@ export class SupabaseVectorStore implements IVectorStore {
 
   async upsert(documents: VectorDocument[]): Promise<void> {
     try {
+      // First, delete existing chunks that would conflict
+      // This handles the unique constraint (document_id, chunk_index)
+      const documentIds = [...new Set(documents.map(doc => doc.metadata?.documentId).filter(Boolean))];
+      const chunkIndices = documents.map(doc => doc.metadata?.chunkIndex).filter(idx => idx !== undefined);
+
+      if (documentIds.length > 0 && chunkIndices.length > 0) {
+        // Delete chunks that match (document_id, chunk_index) pairs
+        for (const doc of documents) {
+          const docId = doc.metadata?.documentId;
+          const chunkIdx = doc.metadata?.chunkIndex;
+          
+          if (docId && chunkIdx !== undefined) {
+            const { error: deleteError } = await this.client
+              .from(this.tableName)
+              .delete()
+              .eq('document_id', docId)
+              .eq('chunk_index', chunkIdx);
+
+            // Ignore errors if chunk doesn't exist (that's fine)
+            if (deleteError && !deleteError.message.includes('No rows')) {
+              // Log but continue - might be a race condition
+              console.warn(`Warning deleting chunk ${docId}:${chunkIdx}:`, deleteError.message);
+            }
+          }
+        }
+      }
+
       const rows = documents.map((doc) => {
         const row: any = {
           document_id: doc.metadata?.documentId || null,
@@ -112,12 +139,10 @@ export class SupabaseVectorStore implements IVectorStore {
         return row;
       });
 
-      // Only set onConflict if we have IDs
-      const hasIds = documents.some((doc) => doc.id);
-
+      // Insert (not upsert) since we've already deleted conflicts
       const { error } = await this.client
         .from(this.tableName)
-        .upsert(rows, hasIds ? { onConflict: 'id' } : undefined);
+        .insert(rows);
 
       if (error) {
         throw error;

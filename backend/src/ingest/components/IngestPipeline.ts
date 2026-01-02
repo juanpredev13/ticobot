@@ -6,6 +6,8 @@ import { QualityScorer } from "./QualityScorer.js";
 import { KeywordExtractor } from "./KeywordExtractor.js";
 import { ProviderFactory } from "./../../factory/ProviderFactory.js";
 import { Logger } from "@ticobot/shared";
+import { createSupabaseClient } from "../../db/supabase.js";
+import { PartiesService } from "../../db/services/parties.service.js";
 import path from "path";
 import fs from "fs/promises";
 
@@ -251,21 +253,51 @@ export class IngestPipeline {
         // Cast to SupabaseVectorStore to access upsertDocument
         const supabaseStore = vectorStore as any;
 
-        // Extract party info from documentId (e.g., "pln-2026" -> "PLN")
-        const partyId = documentId.split('-')[0].toUpperCase();
+        // Extract party slug from documentId (e.g., "pln-2026" -> "pln")
+        const partySlug = documentId.split('-')[0].toLowerCase();
+        
+        // Look up party UUID from parties table
+        const supabase = createSupabaseClient();
+        const partiesService = new PartiesService(supabase);
+        
+        // Try to find party by slug first
+        let party = await partiesService.findBySlug(partySlug);
+        
+        // If not found, try to find by abbreviation (e.g., "ppso" -> "PPSO" -> "pueblo-soberano")
+        if (!party) {
+            party = await partiesService.findByAbbreviation(partySlug.toUpperCase());
+            if (party) {
+                this.logger.info(
+                    `Found party by abbreviation "${partySlug.toUpperCase()}" -> "${party.slug}"`
+                );
+            }
+        }
+        
+        if (!party) {
+            this.logger.warn(
+                `Party not found for slug "${partySlug}" or abbreviation "${partySlug.toUpperCase()}". ` +
+                `Document will be stored with abbreviation instead of UUID.`
+            );
+        }
+
+        // Use party UUID if found, otherwise fall back to abbreviation
+        const partyId = party?.id || partySlug.toUpperCase();
+        const partyName = party?.name || partySlug.toUpperCase();
+        const partyAbbreviation = party?.abbreviation || partySlug.toUpperCase();
 
         // 1. First, insert the document metadata
         const documentUuid = await supabaseStore.upsertDocument({
             documentId,
-            title: `Plan de Gobierno ${partyId} 2026`,
-            partyId,
-            partyName: partyId, // TODO: Map to full party name
+            title: `Plan de Gobierno ${partyName} 2026`,
+            partyId, // This will be UUID if party found, otherwise abbreviation
+            partyName,
             url,
             pageCount,
             fileSizeBytes: fileSize,
             metadata: {
                 source: 'TSE',
                 year: 2026,
+                partyAbbreviation,
             },
         });
 

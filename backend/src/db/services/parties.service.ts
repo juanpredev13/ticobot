@@ -93,7 +93,8 @@ export class PartiesService {
     offset?: number;
   }): Promise<Party[]> {
     // Hardcoded top 5 party slugs (in priority order)
-    const TOP_5_SLUGS = ['pln', 'pusc', 'cac', 'fa', 'pueblo-soberano'];
+    // PLN, CAC, PS (Pueblo Soberano), FA, PUSC
+    const TOP_5_SLUGS = ['liberacion-nacional', 'coalicion-agenda-ciudadana', 'pueblo-soberano', 'frente-amplio', 'unidad-social-cristiana'];
 
     let query = this.supabase
       .from('parties')
@@ -173,6 +174,24 @@ export class PartiesService {
     }
 
     return data as Party;
+  }
+
+  /**
+   * Get party by abbreviation
+   */
+  async findByAbbreviation(abbreviation: string): Promise<Party | null> {
+    const { data, error } = await this.supabase
+      .from('parties')
+      .select('*')
+      .eq('abbreviation', abbreviation.toUpperCase())
+      .maybeSingle();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null; // Not found
+      throw error;
+    }
+
+    return data as Party | null;
   }
 
   /**
