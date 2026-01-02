@@ -226,23 +226,25 @@ export class TextCleaner {
         let fixed = text;
         
         // Fix missing spaces before common words (words that should have space before them)
+        // NOTE: Do NOT include broken OCR versions (like 'alud', 'educació', 'paí') here,
+        // as they will incorrectly match within correct words (e.g., 'alud' matches in 'salud')
         const wordsNeedingSpaceBefore = [
             'centro', 'familia', 'familias', 'persona', 'personas', 'confianza', 'problema', 'problemas',
-            'construiremos', 'construir', 'pueblo', 'país', 'paí', 'vocación', 'decisiones', 'calidad',
-            'rápido', 'rápidamente', 'además', 'ademá', 'sienten', 'escuchados', 'escuchado',
-            'descentralización', 'descentralizació', 'educación', 'educació', 'salud', 'alud',
-            'merecen', 'erecen', 'sabe', 'sabemos', 'saben', 'reducir', 'reduciendo', 'educir',
+            'construiremos', 'construir', 'pueblo', 'país', 'vocación', 'decisiones', 'calidad',
+            'rápido', 'rápidamente', 'además', 'sienten', 'escuchados', 'escuchado',
+            'descentralización', 'educación', 'salud',
+            'merecen', 'sabe', 'sabemos', 'saben', 'reducir', 'reduciendo',
             'motor', 'motores', 'ciencias', 'dispositivos', 'insumos', 'servicios', 'médicos',
             'microbiología', 'farmacia', 'software', 'clínico', 'potencial', 'escalar', 'cadena',
             'valor', 'nivel', 'mundial', 'turístico', 'segurando', 'encadenamientos', 'locales',
             'complementariedad', 'economía', 'azul', 'verde', 'estrategia', 'desarrollo', 'nacional',
             'vertientes', 'multipolar', 'énfasis', 'enfatizando', 'ciudades', 'emergentes', 'periféricas',
             'Liberia', 'Ciudad', 'Quesada', 'Guápiles', 'San', 'Isidro', 'General', 'infraestructura',
-            'logística', 'tecnología', 'costos', 'producción', 'producció', 'destrabar', 'política',
+            'logística', 'tecnología', 'costos', 'producción', 'destrabar', 'política',
             'políticas', 'clústeres', 'aglomeraciones', 'productivas', 'coordinan', 'públicas',
             'conjunto', 'empresas', 'grandes', 'pequeñas', 'encadenamientos', 'agregado', 'costarricense',
             'líder', 'capacidad', 'convivir', 'paz', 'ambiente', 'tecnología', 'abolición', 'ejército',
-            'construimos', 'cultura', 'interna', 'resuelve', 'conflictos', 'hablando', 'armas', 'ultura',
+            'construimos', 'cultura', 'interna', 'resuelve', 'conflictos', 'hablando', 'armas',
             'recuperar', 'distinguimos', 'parques', 'nacionales', 'reforestado', 'siguiente', 'paso',
             'ecología', 'integral', 'adaptación', 'climática', 'finalmente', 'debemos', 'dominar',
             'inteligencia', 'artificial', 'redes', 'sociales', 'teléfonos', 'liderazgos', 'definen',
@@ -410,10 +412,12 @@ export class TextCleaner {
         cleaned = cleaned.replace(/,\s*,+/g, ',');
         
         // Remove standalone single characters that are not part of words
-        cleaned = cleaned.replace(/\b([a-zA-Z])\b(?=\s|$|,|\.)/g, (match, char) => {
+        // NOTE: Don't use \b with accented characters as it treats them as word boundaries!
+        // Instead, explicitly match space/start/punctuation before and after
+        cleaned = cleaned.replace(/(^|[\s,.\-;:!?¿¡])([a-zA-Z])(?=[\s,.\-;:!?¿¡]|$)/g, (match, before, char) => {
             // Keep if it's a common single-letter word (like "a" in Spanish)
             const commonSingleChars = ['a', 'y', 'o', 'e', 'u'];
-            return commonSingleChars.includes(char.toLowerCase()) ? match : '';
+            return commonSingleChars.includes(char.toLowerCase()) ? match : before;
         });
         
         if (preservePunctuation) {
@@ -456,10 +460,12 @@ export class TextCleaner {
             .join('\n');
         
         // Remove standalone single characters that aren't common words
-        cleaned = cleaned.replace(/\b([a-zA-Z])\b(?=\s|$|,|\.|;|:)/g, (match, char) => {
+        // NOTE: Don't use \b with accented characters as it treats them as word boundaries!
+        // Instead, explicitly match space/start/punctuation before and after
+        cleaned = cleaned.replace(/(^|[\s,.\-;:!?¿¡])([a-zA-Z])(?=[\s,.\-;:!?¿¡]|$)/g, (match, before, char) => {
             // Keep common single-letter words
             const commonSingleChars = ['a', 'y', 'o', 'e', 'u', 'i'];
-            return commonSingleChars.includes(char.toLowerCase()) ? match : '';
+            return commonSingleChars.includes(char.toLowerCase()) ? match : before;
         });
         
         // Replace multiple spaces with single space
