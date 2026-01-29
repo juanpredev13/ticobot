@@ -300,36 +300,47 @@ export class RAGPipeline {
         const partiesService = new PartiesService(supabase);
 
         for (const partyId of partyIds) {
-            // Try to resolve party UUID from slug
-            // If partyId is already a UUID (contains dashes), use it directly
-            // Otherwise, try to find the party by slug (lowercase)
+            // Try to resolve party UUID and name from slug/abbreviation
+            // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12)
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(partyId);
+
             let filterPartyId: string | undefined = partyId;
-            
-            if (!partyId.includes('-')) {
-                // Not a UUID, try to find party by slug
-                try {
-                    const slug = partyId.toLowerCase();
-                    const party = await partiesService.findBySlug(slug);
+            let partyName: string = partyId; // Store party name for the prompt
+
+            // Always try to look up party info (for name) unless it's a raw UUID
+            try {
+                const slug = partyId.toLowerCase();
+                // First try by slug (e.g., "liberacion-nacional", "pueblo-soberano")
+                let party = await partiesService.findBySlug(slug);
+
+                if (party?.id) {
+                    filterPartyId = party.id;
+                    partyName = party.name || partyId;
+                    this.logger.info(`Resolved party slug "${slug}" to "${partyName}" (UUID: ${party.id})`);
+                } else {
+                    // Try by abbreviation (e.g., "PLN", "CAC")
+                    party = await partiesService.findByAbbreviation(partyId.toUpperCase());
                     if (party?.id) {
                         filterPartyId = party.id;
-                        this.logger.info(`Resolved party slug "${slug}" to UUID: ${party.id}`);
-                    } else {
-                        // Fallback: try abbreviation if slug not found
-                        const partyByAbbrev = await partiesService.findByAbbreviation(partyId);
-                        if (partyByAbbrev?.id) {
-                            filterPartyId = partyByAbbrev.id;
-                            this.logger.info(`Resolved party abbreviation "${partyId}" to UUID: ${partyByAbbrev.id}`);
+                        partyName = party.name || partyId;
+                        this.logger.info(`Resolved party abbreviation "${partyId}" to "${partyName}" (UUID: ${party.id})`);
+                    } else if (isUUID) {
+                        // It's a UUID, try to get party info by ID
+                        party = await partiesService.findById(partyId);
+                        if (party?.name) {
+                            partyName = party.name;
+                            this.logger.info(`Resolved party UUID "${partyId}" to "${partyName}"`);
                         } else {
-                            // Final fallback: use abbreviation as-is (for backwards compatibility)
-                            filterPartyId = partyId;
-                            this.logger.warn(`Party not found for slug "${slug}" or abbreviation "${partyId}", using as-is`);
+                            this.logger.warn(`Party not found for UUID "${partyId}", using ID as name`);
                         }
+                    } else {
+                        // Final fallback
+                        this.logger.warn(`Party not found for "${partyId}", using as-is`);
                     }
-                } catch (error) {
-                    // If lookup fails, use partyId as-is
-                    filterPartyId = partyId;
-                    this.logger.warn(`Error looking up party "${partyId}":`, error);
                 }
+            } catch (error) {
+                // If lookup fails, use partyId as-is
+                this.logger.warn(`Error looking up party "${partyId}":`, error);
             }
 
             // Try with default threshold first
@@ -382,8 +393,31 @@ export class RAGPipeline {
 
             if (searchResults.length > 0) {
                 const context = this.contextBuilder.build(searchResults, question);
-                const response = await this.generator.generate(context, question, {
+
+                // Extract topic from question for the party-specific query
+                const topicMatch = question.match(/propuestas?\s+(?:sobre|de|en)\s+([^?]+)/i);
+                const topic = topicMatch ? topicMatch[1].replace(/de los partidos.*$/i, '').trim() : question;
+                const partySpecificQuestion = `¿Cuáles son las propuestas sobre ${topic}?`;
+                this.logger.info(`Party-specific question for ${partyName}: "${partySpecificQuestion}"`);
+
+                // Build custom user prompt that only mentions this party
+                // This bypasses the default buildUserPrompt which mentions TOP 5 parties
+                const singlePartyUserPrompt = this.generator.buildSinglePartyPrompt(
+                    context,
+                    partySpecificQuestion,
+                    partyName
+                );
+
+                // System prompt focused on single party analysis
+                const singlePartySystemPrompt = `Eres un asistente experto en Planes de Gobierno de Costa Rica 2026.
+Tu tarea es analizar ÚNICAMENTE las propuestas del partido ${partyName}.
+NO menciones otros partidos políticos bajo ninguna circunstancia.
+Responde siempre en español.`;
+
+                const response = await this.generator.generate(context, partySpecificQuestion, {
                     temperature: options?.temperature,
+                    systemPrompt: singlePartySystemPrompt,
+                    userPrompt: singlePartyUserPrompt,
                 });
 
                 comparisons.push({

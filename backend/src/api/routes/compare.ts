@@ -260,25 +260,33 @@ router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFun
         const processingTime = Date.now() - startTime;
         logger.info(`Comparison completed: ${enrichedComparisons.length} parties compared in ${processingTime}ms`);
 
-        // Store in cache (async, don't wait)
-        cacheService.setCached(
-            params.topic,
-            params.partyIds,
-            enrichedComparisons.map(c => ({
-                party: c.party,
-                answer: c.answer,
-                state: c.state,
-                stateLabel: c.stateLabel,
-                confidence: c.confidence,
-                sources: c.sources,
-            })),
-            {
-                processingTime,
-                // Cache never expires (expiresInHours not set = null = never expires)
-            }
-        ).catch(err => {
-            logger.warn('Failed to cache comparison result:', err);
-        });
+        // Only cache if ALL parties have information (no "sin_informacion" results)
+        const hasNoInfoResults = enrichedComparisons.some(c => c.state === ProposalState.SIN_INFORMACION);
+
+        if (hasNoInfoResults) {
+            logger.info(`⚠️ Skipping cache - ${enrichedComparisons.filter(c => c.state === ProposalState.SIN_INFORMACION).length} parties have no information`);
+        } else {
+            // Store in cache (async, don't wait)
+            cacheService.setCached(
+                params.topic,
+                params.partyIds,
+                enrichedComparisons.map(c => ({
+                    party: c.party,
+                    answer: c.answer,
+                    state: c.state,
+                    stateLabel: c.stateLabel,
+                    confidence: c.confidence,
+                    sources: c.sources,
+                })),
+                {
+                    processingTime,
+                    // Cache never expires (expiresInHours not set = null = never expires)
+                }
+            ).catch(err => {
+                logger.warn('Failed to cache comparison result:', err);
+            });
+            logger.info(`✅ Cached comparison result for topic: "${params.topic}"`);
+        }
 
         res.json({
             topic: result.question,

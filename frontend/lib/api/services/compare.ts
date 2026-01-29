@@ -68,10 +68,11 @@ export const compareService = {
    * Compare proposals between multiple parties on a specific topic
    */
   compare: async (params: CompareProposalsParams): Promise<CompareProposalsResponse> => {
-    // Use longer timeout for compare endpoint (60 seconds)
-    // Comparison can take 30-40 seconds for 4 parties with RAG processing
+    // Use longer timeout for compare endpoint (3 minutes)
+    // Comparison can take 30-40 seconds PER PARTY with RAG processing
+    // For 5 parties: ~150-200 seconds total
     return api.post<CompareProposalsResponse>('/api/compare', params, {
-      timeout: 60000, // 60 seconds
+      timeout: 180000, // 3 minutes
     });
   },
 };

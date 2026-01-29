@@ -11,6 +11,7 @@ import { useCompareProposals, useParties } from "@/lib/hooks"
 import { ProposalState } from "@/lib/api/services/compare"
 import Link from "next/link"
 import { createPartyColorMap, getPartyPrimaryColor } from "@/lib/utils/party-colors"
+import { CompareLoading } from "@/components/compare-loading"
 
 const TOPICS = ["Educación", "Salud", "Empleo", "Seguridad", "Ambiente", "Economía", "Infraestructura", "Corrupción"]
 
@@ -259,10 +260,10 @@ export default function ComparePage() {
           
           if (isLoading) {
             return (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="size-8 animate-spin text-muted-foreground" />
-                <span className="ml-3 text-muted-foreground">Comparando propuestas...</span>
-              </div>
+              <CompareLoading
+                partiesCount={selectedParties.length}
+                topic={customTopic || selectedTopic || "propuestas"}
+              />
             )
           }
           

@@ -37,6 +37,7 @@ export class ResponseGenerator {
             temperature?: number;
             maxTokens?: number;
             systemPrompt?: string;
+            userPrompt?: string; // Optional custom user prompt (bypasses buildUserPrompt)
         }
     ): Promise<{
         answer: string;
@@ -70,7 +71,8 @@ export class ResponseGenerator {
             const llmProvider = await ProviderFactory.getLLMProvider();
 
             // Build user prompt with context (use trimmed context)
-            const userPrompt = this.buildUserPrompt(trimmedContext, query);
+            // Use custom userPrompt if provided, otherwise build default
+            const userPrompt = options?.userPrompt || this.buildUserPrompt(trimmedContext, query);
             this.logger.info(`User prompt length: ${userPrompt.length} characters`);
 
             // Build messages
@@ -152,6 +154,40 @@ export class ResponseGenerator {
             this.logger.error('Failed to generate streaming response', error);
             throw new Error(`Streaming response generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
+    }
+
+    /**
+     * Build a simple user prompt for single-party comparison
+     * This avoids mentioning other parties in the prompt
+     * @param context - Context from retrieved chunks
+     * @param query - User query
+     * @param partyName - Name of the party being analyzed
+     * @returns Formatted user prompt for single party
+     */
+    buildSinglePartyPrompt(context: string, query: string, partyName: string): string {
+        if (!context || context.trim().length === 0) {
+            return `No se encontró información sobre ${partyName} para esta consulta.`;
+        }
+
+        return `Analiza el siguiente contexto del plan de gobierno de ${partyName} y responde la pregunta.
+
+=== CONTEXTO DEL PLAN DE GOBIERNO DE ${partyName.toUpperCase()} ===
+
+${context}
+
+=== FIN DEL CONTEXTO ===
+
+PREGUNTA: ${query}
+
+INSTRUCCIONES:
+- Extrae y presenta las propuestas de ${partyName} del contexto
+- Usa títulos (###) para categorías temáticas
+- Usa negritas (**texto**) para destacar propuestas clave
+- Usa viñetas (-) para listar propuestas específicas
+- Sé exhaustivo pero organizado
+- Responde en español
+
+IMPORTANTE: Solo presenta información de ${partyName}. No menciones otros partidos.`;
     }
 
     /**
