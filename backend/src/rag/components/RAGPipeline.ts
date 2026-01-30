@@ -9,6 +9,61 @@ import { PartiesService } from '../../db/services/parties.service.js';
 // Document IDs to exclude from displayed sources (but keep in context for LLM)
 const EXCLUDED_FROM_SOURCES = ['partidos-candidatos-2026'];
 
+// TOP 5 party slugs for multi-party search (in priority order)
+const TOP_5_PARTY_SLUGS = [
+    'liberacion-nacional',      // PLN
+    'coalicion-agenda-ciudadana', // CAC
+    'pueblo-soberano',          // PS
+    'frente-amplio',            // FA
+    'unidad-social-cristiana',  // PUSC
+];
+
+// Party name patterns for detection in user questions
+const PARTY_PATTERNS: { slug: string; patterns: RegExp[] }[] = [
+    {
+        slug: 'liberacion-nacional',
+        patterns: [/\bPLN\b/i, /\bliberaci[oó]n\s*nacional\b/i, /\bpartido\s*liberaci[oó]n\b/i]
+    },
+    {
+        slug: 'coalicion-agenda-ciudadana',
+        patterns: [/\bCAC\b/i, /\bagenda\s*ciudadana\b/i, /\bcoalici[oó]n\s*agenda\b/i]
+    },
+    {
+        slug: 'pueblo-soberano',
+        patterns: [/\bPS\b/i, /\bpueblo\s*soberano\b/i]
+    },
+    {
+        slug: 'frente-amplio',
+        patterns: [/\bFA\b/i, /\bfrente\s*amplio\b/i]
+    },
+    {
+        slug: 'unidad-social-cristiana',
+        patterns: [/\bPUSC\b/i, /\bunidad\s*social\b/i, /\bsocial\s*cristian[oa]\b/i]
+    },
+];
+
+/**
+ * Extract party slugs mentioned in a question
+ * @param question - User's question text
+ * @returns Array of party slugs found in the question
+ */
+function extractPartiesFromQuestion(question: string): string[] {
+    const foundParties: string[] = [];
+
+    for (const party of PARTY_PATTERNS) {
+        for (const pattern of party.patterns) {
+            if (pattern.test(question)) {
+                if (!foundParties.includes(party.slug)) {
+                    foundParties.push(party.slug);
+                }
+                break;
+            }
+        }
+    }
+
+    return foundParties;
+}
+
 /**
  * RAGPipeline - Main orchestrator for Retrieval-Augmented Generation
  * Coordinates the complete query-to-response workflow
@@ -76,21 +131,39 @@ export class RAGPipeline {
             // Step 2: Search for relevant chunks using hybrid search (vector + keywords)
             this.logger.info('Step 2/4: Searching for relevant chunks (hybrid search)...');
             const topK = options?.topK ?? 5;
-            
-            // Use hybrid search which combines vector similarity with keyword matching
-            // This provides ~95% precision vs ~80% with vector-only search
-            const searchResults: SearchResult[] = await this.searcher.searchHybrid(
-                question,  // Original query text for keyword extraction
-                embedding, // Embedding for vector search
-                topK,
-                {
-                    vectorWeight: 0.7,  // 70% weight for vector similarity
-                    keywordWeight: 0.3, // 30% weight for keyword matching
-                    minScore: options?.minRelevanceScore,
-                    partyId: options?.filters?.partyId,
-                    useQueryProcessing: true, // Enable Pre-RAG keyword extraction
+
+            let searchResults: SearchResult[];
+
+            // Check if specific parties are mentioned in the question
+            const mentionedParties = extractPartiesFromQuestion(question);
+
+            // If no specific party filter, check for parties mentioned in question
+            if (!options?.filters?.partyId) {
+                if (mentionedParties.length > 0) {
+                    // Search only the parties mentioned in the question
+                    this.logger.info(`Detected ${mentionedParties.length} parties in question: ${mentionedParties.join(', ')}`);
+                    searchResults = await this.searchMultiParty(question, embedding, topK, options?.minRelevanceScore, mentionedParties);
+                } else {
+                    // No parties mentioned - search all TOP 5
+                    this.logger.info('No specific parties detected - searching TOP 5 parties...');
+                    searchResults = await this.searchMultiParty(question, embedding, topK, options?.minRelevanceScore);
                 }
-            );
+            } else {
+                // Use hybrid search which combines vector similarity with keyword matching
+                // This provides ~95% precision vs ~80% with vector-only search
+                searchResults = await this.searcher.searchHybrid(
+                    question,  // Original query text for keyword extraction
+                    embedding, // Embedding for vector search
+                    topK,
+                    {
+                        vectorWeight: 0.7,  // 70% weight for vector similarity
+                        keywordWeight: 0.3, // 30% weight for keyword matching
+                        minScore: options?.minRelevanceScore,
+                        partyId: options?.filters?.partyId,
+                        useQueryProcessing: true, // Enable Pre-RAG keyword extraction
+                    }
+                );
+            }
 
             if (searchResults.length === 0) {
                 this.logger.warn('No relevant results found');
@@ -146,7 +219,7 @@ export class RAGPipeline {
                 return {
                     id: result.document.id,
                     content: result.document.content.substring(0, 200) + '...',
-                    party: result.document.metadata?.partyId || result.document.metadata?.party || 'Unknown',
+                    party: result.document.metadata?.partyName || result.document.metadata?.party || 'Unknown',
                     document: result.document.metadata?.title || result.document.metadata?.documentId || 'Unknown',
                     relevance: normalizedRelevance,
                     pageNumber: result.document.metadata?.pageNumber,
@@ -201,19 +274,37 @@ export class RAGPipeline {
         this.logger.info(`Processing streaming query: "${question.substring(0, 100)}..."`);
 
         try {
-            // Steps 1-3: Same as regular query (using hybrid search)
+            // Steps 1-3: Same as regular query (using hybrid search or multi-party search)
             const embedding = await this.embedder.embed(question);
-            const searchResults = await this.searcher.searchHybrid(
-                question,
-                embedding,
-                options?.topK ?? 5,
-                {
-                    vectorWeight: 0.7,
-                    keywordWeight: 0.3,
-                    partyId: options?.filters?.partyId,
-                    useQueryProcessing: true,
+            const topK = options?.topK ?? 5;
+
+            let searchResults: SearchResult[];
+
+            // Check if specific parties are mentioned in the question
+            const mentionedParties = extractPartiesFromQuestion(question);
+
+            // If no specific party filter, check for parties mentioned in question
+            if (!options?.filters?.partyId) {
+                if (mentionedParties.length > 0) {
+                    this.logger.info(`Streaming: Detected ${mentionedParties.length} parties in question: ${mentionedParties.join(', ')}`);
+                    searchResults = await this.searchMultiParty(question, embedding, topK, undefined, mentionedParties);
+                } else {
+                    this.logger.info('Streaming: No specific parties detected - searching TOP 5 parties...');
+                    searchResults = await this.searchMultiParty(question, embedding, topK);
                 }
-            );
+            } else {
+                searchResults = await this.searcher.searchHybrid(
+                    question,
+                    embedding,
+                    topK,
+                    {
+                        vectorWeight: 0.7,
+                        keywordWeight: 0.3,
+                        partyId: options?.filters?.partyId,
+                        useQueryProcessing: true,
+                    }
+                );
+            }
 
             if (searchResults.length === 0) {
                 yield {
@@ -244,7 +335,7 @@ export class RAGPipeline {
                 })
                 .map(result => ({
                     id: result.document.id,
-                    party: result.document.metadata?.partyId || 'Unknown',
+                    party: result.document.metadata?.partyName || result.document.metadata?.party || 'Unknown',
                     relevance: result.score,
                 }));
 
@@ -452,6 +543,136 @@ Responde siempre en español.`;
             question,
             comparisons,
         };
+    }
+
+    /**
+     * Search across TOP 5 parties for multi-party coverage
+     * This ensures the chat response includes information from multiple parties
+     * @param question - User's question
+     * @param embedding - Query embedding
+     * @param totalTopK - Total number of results desired
+     * @param minRelevanceScore - Minimum relevance score
+     * @returns Combined search results from multiple parties
+     */
+    private async searchMultiParty(
+        question: string,
+        embedding: number[],
+        totalTopK: number,
+        minRelevanceScore?: number,
+        specificParties?: string[] // Optional: only search these party slugs
+    ): Promise<SearchResult[]> {
+        const supabase = createSupabaseClient();
+        const partiesService = new PartiesService(supabase);
+
+        // Use specific parties if provided, otherwise use TOP 5
+        const partiesToSearch = specificParties && specificParties.length > 0
+            ? specificParties
+            : TOP_5_PARTY_SLUGS;
+
+        // Calculate how many results to get per party (at least 3 per party for better coverage)
+        const resultsPerParty = Math.max(3, Math.ceil(totalTopK / partiesToSearch.length));
+        this.logger.info(`Searching ${resultsPerParty} results per party across ${partiesToSearch.length} parties: ${partiesToSearch.join(', ')}`);
+
+        const allResults: SearchResult[] = [];
+        const partyResultsMap: Map<string, SearchResult[]> = new Map();
+
+        // Search each party
+        for (const slug of partiesToSearch) {
+            try {
+                // Resolve party UUID from slug
+                const party = await partiesService.findBySlug(slug);
+                if (!party?.id) {
+                    this.logger.warn(`Party not found for slug: ${slug}`);
+                    continue;
+                }
+
+                this.logger.info(`Searching party: ${party.name} (${slug})`);
+
+                const partyResults = await this.searcher.searchHybrid(
+                    question,
+                    embedding,
+                    resultsPerParty,
+                    {
+                        vectorWeight: 0.7,
+                        keywordWeight: 0.3,
+                        minScore: minRelevanceScore ?? 0.1, // Very low threshold for multi-party coverage
+                        partyId: party.id,
+                        useQueryProcessing: true,
+                    }
+                );
+
+                if (partyResults.length > 0) {
+                    this.logger.info(`Found ${partyResults.length} results for ${party.name}`);
+                    partyResultsMap.set(party.name, partyResults);
+                    allResults.push(...partyResults);
+                } else {
+                    this.logger.info(`No results for ${party.name}`);
+                }
+            } catch (error) {
+                this.logger.warn(`Error searching party ${slug}:`, error);
+            }
+        }
+
+        // If multi-party search found nothing, fall back to general search
+        if (allResults.length === 0) {
+            this.logger.info('No results from TOP 5 parties, falling back to general search...');
+            return this.searcher.searchHybrid(
+                question,
+                embedding,
+                totalTopK,
+                {
+                    vectorWeight: 0.7,
+                    keywordWeight: 0.3,
+                    minScore: minRelevanceScore ?? 0.1,
+                    useQueryProcessing: true,
+                }
+            );
+        }
+
+        // Sort all results by score and take top results
+        allResults.sort((a, b) => b.score - a.score);
+
+        // Log party distribution
+        const partyDistribution = new Map<string, number>();
+        for (const result of allResults) {
+            const partyName = result.document.metadata?.partyName || result.document.metadata?.party || 'Unknown';
+            partyDistribution.set(partyName, (partyDistribution.get(partyName) || 0) + 1);
+        }
+        this.logger.info(`Party distribution: ${JSON.stringify(Object.fromEntries(partyDistribution))}`);
+
+        // Return top results, but ensure we have at least 1 result per party that had results
+        // This ensures diversity in the response
+        const finalResults: SearchResult[] = [];
+        const usedParties = new Set<string>();
+
+        // For multi-party search, we want at least 2 results per party to ensure good coverage
+        // Minimum of 10 total results (2 per party * 5 parties)
+        const minResultsForMultiParty = Math.max(totalTopK, partyResultsMap.size * 2);
+
+        // First pass: take best result from each party
+        for (const result of allResults) {
+            const partyName = result.document.metadata?.partyName || result.document.metadata?.party || 'Unknown';
+            if (!usedParties.has(partyName)) {
+                finalResults.push(result);
+                usedParties.add(partyName);
+            }
+        }
+
+        // Second pass: add second best result from each party
+        const usedResultIds = new Set(finalResults.map(r => r.document.id));
+        for (const result of allResults) {
+            if (!usedResultIds.has(result.document.id)) {
+                finalResults.push(result);
+                usedResultIds.add(result.document.id);
+                if (finalResults.length >= minResultsForMultiParty) break;
+            }
+        }
+
+        // Sort final results by score
+        finalResults.sort((a, b) => b.score - a.score);
+
+        this.logger.info(`Multi-party search returned ${finalResults.length} results from ${usedParties.size} parties`);
+        return finalResults;
     }
 
     /**

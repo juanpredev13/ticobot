@@ -9,18 +9,18 @@ import { ChatCacheService } from '../../db/services/chat-cache.service.js';
 const router: Router = Router();
 const logger = new Logger('ChatAPI');
 
-// Initialize RAG pipeline
+// Initialize RAG pipeline with larger context for multi-party responses
 const ragPipeline = new RAGPipeline({
-    maxContextLength: 8000 // ~2k tokens for context (allows 2-3 chunks)
+    maxContextLength: 16000 // ~4k tokens for context (allows multiple chunks per party)
 });
 
 // Validation schema
 const chatSchema = z.object({
     question: z.string().min(1, 'Question cannot be empty').max(1000, 'Question too long'),
     party: z.string().optional(),
-    topK: z.coerce.number().min(1).max(10).default(5),
+    topK: z.coerce.number().min(1).max(15).default(10), // Increased for multi-party coverage
     temperature: z.coerce.number().min(0).max(2).default(0.7),
-    maxTokens: z.coerce.number().min(100).max(2000).default(800),
+    maxTokens: z.coerce.number().min(100).max(4000).default(2000), // Increased for multi-party responses
     minRelevanceScore: z.coerce.number().min(0).max(1).default(0.1),
     conversationHistory: z.array(z.object({
         role: z.enum(['user', 'assistant']),
@@ -57,9 +57,9 @@ const chatSchema = z.object({
  *               topK:
  *                 type: number
  *                 minimum: 1
- *                 maximum: 10
- *                 default: 5
- *                 description: Number of relevant chunks to retrieve
+ *                 maximum: 15
+ *                 default: 10
+ *                 description: Number of relevant chunks to retrieve (higher for multi-party)
  *               temperature:
  *                 type: number
  *                 minimum: 0
@@ -69,14 +69,14 @@ const chatSchema = z.object({
  *               maxTokens:
  *                 type: number
  *                 minimum: 100
- *                 maximum: 2000
- *                 default: 800
- *                 description: Maximum tokens in response
+ *                 maximum: 4000
+ *                 default: 2000
+ *                 description: Maximum tokens in response (higher for multi-party)
  *               minRelevanceScore:
  *                 type: number
  *                 minimum: 0
  *                 maximum: 1
- *                 default: 0.35
+ *                 default: 0.1
  *                 description: Minimum similarity score for retrieved chunks
  *               conversationHistory:
  *                 type: array

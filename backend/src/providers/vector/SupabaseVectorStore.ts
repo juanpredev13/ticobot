@@ -212,7 +212,7 @@ export class SupabaseVectorStore implements IVectorStore {
         const enrichedMetadata = {
           ...row.metadata,
           partyId: docInfo.partyId || row.metadata?.partyId,
-          party: docInfo.partyId || row.metadata?.party || row.metadata?.partyId,
+          party: docInfo.partyName || row.metadata?.partyName || row.metadata?.party || 'Unknown',
           partyName: docInfo.partyName || row.metadata?.partyName,
           title: docInfo.title || row.metadata?.title,
           documentId: docInfo.documentId || row.metadata?.documentId,
@@ -278,7 +278,8 @@ export class SupabaseVectorStore implements IVectorStore {
       });
 
       if (error) {
-        throw error;
+        console.error('Supabase hybrid_search RPC error:', JSON.stringify(error, null, 2));
+        throw new Error(`hybrid_search RPC failed: ${error.message || error.code || JSON.stringify(error)}`);
       }
 
       if (!data || data.length === 0) {

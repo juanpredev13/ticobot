@@ -39,14 +39,14 @@ type Message = {
 type AuthMode = "signup" | "signin"
 
 const SUGGESTED_QUESTIONS = [
-  "¿Qué proponen los partidos sobre educación superior y universidades públicas?",
-  "¿Cuáles son las propuestas de los partidos para mejorar el sistema de salud?",
-  "¿Qué planes tienen los partidos para generar empleo y reducir el desempleo?",
-  "¿Cómo abordan los partidos la seguridad ciudadana y la delincuencia?",
+  "¿Qué proponen el PLN y el FA sobre educación superior?",
+  "¿Cuáles son las propuestas del PUSC y CAC para mejorar el sistema de salud?",
+  "¿Qué planes tienen el PLN, FA y PS para generar empleo?",
+  "¿Cómo abordan el PUSC y el PLN la seguridad ciudadana?",
   "¿Cuál es el candidato presidencial del PLN?",
-  "¿Qué proponen los partidos sobre el cambio climático y medio ambiente?",
-  "¿Cuáles son las propuestas de los partidos sobre transporte público?",
-  "¿Qué planes tienen los partidos para la economía y el crecimiento?",
+  "¿Qué proponen el FA y PS sobre cambio climático?",
+  "¿Cuáles son las propuestas del CAC y PLN sobre transporte público?",
+  "¿Qué planes tienen el PUSC y FA para la economía?",
 ]
 
 function ChatContent() {
@@ -361,6 +361,9 @@ function ChatContent() {
                                 : "border border-border bg-card"
                             }`}
                           >
+                            {message.role === "user" ? (
+                              <p className="text-sm leading-relaxed">{message.content}</p>
+                            ) : (
                             <div className="prose prose-sm max-w-none dark:prose-invert">
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
@@ -388,6 +391,7 @@ function ChatContent() {
                                 {message.content}
                               </ReactMarkdown>
                             </div>
+                            )}
                           </div>
 
                           {/* Sources (only for assistant messages) */}
@@ -556,6 +560,11 @@ function ChatContent() {
                 <div className="flex gap-2">
                   <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
                   <span>Cada respuesta incluye las fuentes consultadas con páginas específicas</span>
+                </div>
+                <div className="mt-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 p-3 border border-amber-200 dark:border-amber-800">
+                  <p className="text-amber-800 dark:text-amber-200 font-medium text-xs">
+                    Recomendación: Para obtener respuestas más completas y detalladas, pregunta por 2 o 3 partidos específicos en cada consulta.
+                  </p>
                 </div>
               </CardContent>
             </Card>

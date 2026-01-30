@@ -76,7 +76,7 @@ export class ContextBuilder {
         const sources = chunks.map((result, index) => ({
             id: result.document.id || `chunk-${index}`,
             title: result.document.metadata?.title || result.document.metadata?.documentId || 'Unknown Document',
-            party: result.document.metadata?.partyId || result.document.metadata?.party || 'Unknown Party',
+            party: result.document.metadata?.partyName || result.document.metadata?.party || 'Unknown Party',
             relevance: result.score || 0,
         }));
 
@@ -95,7 +95,7 @@ export class ContextBuilder {
         content: string,
         metadata: Record<string, any>
     ): string {
-        const party = metadata.partyId || metadata.party || 'Unknown';
+        const party = metadata.partyName || metadata.party || 'Unknown';
         const document = metadata.title || metadata.documentId || 'Unknown Document';
 
         // Limit individual chunk size to allow more diverse chunks in context
