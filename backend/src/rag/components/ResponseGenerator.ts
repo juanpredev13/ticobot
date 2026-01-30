@@ -10,12 +10,13 @@ export class ResponseGenerator {
     private systemPrompt: string;
     
     // Top 5 partidos políticos prioritarios cuando no se especifican partidos
+    // Orden: PLN, CAC, PS, FA, PUSC (mismos que en RAGPipeline)
     private readonly TOP_PARTIES = [
-        { abbrev: 'PS', name: 'Pueblo Soberano', documentId: 'PPSO' },
-        { abbrev: 'CAC', name: 'Coalición Agenda Ciudadana', documentId: 'CAC' },
-        { abbrev: 'PUSC', name: 'Partido Unidad Social Cristiana', documentId: 'PUSC' },
         { abbrev: 'PLN', name: 'Partido Liberación Nacional', documentId: 'PLN' },
+        { abbrev: 'CAC', name: 'Coalición Agenda Ciudadana', documentId: 'CAC' },
+        { abbrev: 'PS', name: 'Pueblo Soberano', documentId: 'PPSO' },
         { abbrev: 'FA', name: 'Frente Amplio', documentId: 'FA' },
+        { abbrev: 'PUSC', name: 'Partido Unidad Social Cristiana', documentId: 'PUSC' },
     ];
 
     constructor() {
@@ -214,19 +215,14 @@ IMPORTANTE: Solo presenta información de ${partyName}. No menciones otros parti
    - Agrupa por partido con títulos ## Partido Nombre (Abreviatura)
    - Incluye TODOS los partidos mencionados en la pregunta`;
         } else {
+            // When no specific party is mentioned, show TOP 5 parties from context
             const topPartiesList = this.TOP_PARTIES.map(p => `${p.name} (${p.abbrev})`).join(', ');
             partyOrgInstructions = `- ⚠️ IMPORTANTE: La pregunta NO menciona partidos específicos
-   - DEBES priorizar y mostrar los siguientes TOP 5 partidos políticos (en este orden):
-     1. Pueblo Soberano (PS)
-     2. Coalición Agenda Ciudadana (CAC)
-     3. Partido Unidad Social Cristiana (PUSC)
-     4. Partido Liberación Nacional (PLN)
-     5. Frente Amplio (FA)
-   - Busca información de estos partidos en el contexto: ${topPartiesList}
-   - Si alguno de estos partidos NO aparece en el contexto, omítelo y continúa con los siguientes
+   - El contexto contiene información de los TOP 5 partidos prioritarios: ${topPartiesList}
+   - Presenta información de TODOS los partidos que aparezcan en el contexto
    - Agrupa cada partido con títulos ## Partido Nombre (Abreviatura)
-   - Mantén el orden de prioridad: PS, CAC, PUSC, PLN, FA
-   - NO te limites a un solo partido - muestra todos los partidos prioritarios que aparezcan en el contexto`;
+   - Mantén el orden de prioridad cuando sea posible: PLN, CAC, PS, FA, PUSC
+   - Si algún partido NO aparece en el contexto, simplemente omítelo`;
         }
 
         // Build content instructions
@@ -234,20 +230,15 @@ IMPORTANTE: Solo presenta información de ${partyName}. No menciones otros parti
         if (hasSpecificParties) {
             contentInstructions = '- Si hay múltiples partidos mencionados, compara sus propuestas';
         } else {
+            // Instructions for multi-party response
             const topPartiesList = this.TOP_PARTIES.map(p => `${p.name} (${p.abbrev})`).join(', ');
             contentInstructions = `- ⚠️ CRÍTICO: La pregunta NO menciona partidos específicos
-   - DEBES buscar y mostrar información de los TOP 5 partidos prioritarios: ${topPartiesList}
-   - Revisa el contexto y extrae información de estos partidos en el orden de prioridad
-   - Si un partido prioritario aparece en el contexto, DEBES incluirlo en la respuesta
-   - Compara las propuestas de los diferentes partidos mostrados
-   - NO te limites a un solo partido - el contexto contiene información de múltiples partidos
-   - Si algún partido prioritario NO aparece en el contexto, menciona esto al inicio de la respuesta`;
+   - El contexto incluye información de los TOP 5 partidos: ${topPartiesList}
+   - Revisa el contexto y extrae información de TODOS los partidos que aparezcan
+   - Muestra las propuestas de cada partido en secciones separadas
+   - NO te limites a un solo partido - presenta TODOS los partidos del contexto
+   - Al final, incluye un párrafo comparativo entre los partidos mostrados`;
         }
-
-        // Build final important note
-        const importantNote = hasSpecificParties 
-            ? '' 
-            : `⚠️ Si no se mencionan partidos específicos, DEBES priorizar y mostrar los TOP 5 partidos: Pueblo Soberano (PS), Coalición Agenda Ciudadana (CAC), Partido Unidad Social Cristiana (PUSC), Partido Liberación Nacional (PLN), y Frente Amplio (FA). Busca estos partidos en el contexto y muéstralos en ese orden de prioridad.`;
 
         return `Se te ha proporcionado información relevante de los Planes de Gobierno de Costa Rica 2026. Usa esta información para responder la pregunta.
 
@@ -261,10 +252,10 @@ PREGUNTA: ${query}
 
 INSTRUCCIONES DE FORMATO (SIGUE ESTE FORMATO EXACTO):
 
-1. **Nota inicial (solo si aplica):**
-   ${hasSpecificParties 
-     ? '- Si algún partido mencionado NO aparece en el contexto, incluye una nota al inicio indicando esto'
-     : '- Si algún partido prioritario (PS, CAC, PUSC, PLN, FA) NO aparece en el contexto, incluye una nota al inicio indicando qué partidos no están disponibles\n   - Formato: "El contexto proporcionado no incluye información específica sobre [partidos faltantes] en relación con [tema]. Por lo tanto, se presentará la información disponible para los partidos que sí se mencionan: [partidos disponibles]."'}
+1. **Contenido basado en contexto:**
+   - SOLO usa información que aparece en el contexto proporcionado
+   - NO inventes información ni menciones partidos que no están en el contexto
+   - Si el contexto no tiene información sobre un partido específico, NO lo menciones
 
 2. **Estructura de la respuesta:**
    - Usa títulos de nivel 2 (##) para cada partido: ## Nombre Completo del Partido (Abreviatura)
@@ -286,23 +277,20 @@ INSTRUCCIONES DE FORMATO (SIGUE ESTE FORMATO EXACTO):
 5. **Notas aclaratorias:**
    - Si hay confusión en nombres o siglas, incluye notas aclaratorias
    - Formato: "Nota: [explicación]"
-   - Ejemplo: "Nota: No se proporciona información directamente para el PUCD, pero asumiendo una posible confusión o error en la sigla y considerando la información del contexto proporcionado:"
 
 6. **Contenido:**
    - Extrae TODA la información relevante del contexto
    ${contentInstructions}
    - Sé exhaustivo pero organizado
-   - NO digas que no tienes información - el contexto CONTIENE la información
-   - Al final, incluye un párrafo comparativo si hay múltiples partidos
+   - Al final, incluye un párrafo comparativo si hay múltiples partidos en el contexto
 
 7. **Formato markdown:**
    - Usa ## para títulos de partidos (NO uses ### para partidos)
    - Usa ### solo para categorías temáticas dentro de un partido
    - Usa **texto** para negritas (NO uses ****)
    - Usa - para viñetas (NO uses * o números a menos que sea necesario)
-   - NO uses símbolos adicionales como **** después de títulos
 
-IMPORTANTE: El contexto contiene la respuesta. Extráela y preséntala usando el formato especificado arriba. ${importantNote} Responde SIEMPRE en español.`;
+IMPORTANTE: El contexto contiene información de múltiples partidos políticos. Extrae y presenta las propuestas de TODOS los partidos que aparezcan en el contexto. Responde SIEMPRE en español.`;
     }
 
     /**
@@ -349,8 +337,11 @@ INSTRUCCIONES CRÍTICAS:
 - SIEMPRE recibirás contexto con información de los planes de gobierno
 - DEBES usar el contexto proporcionado para responder preguntas
 - El contexto contiene información real de documentos oficiales - ÚSALO
+- El contexto incluye información de múltiples partidos políticos (hasta 5 partidos)
+- DEBES presentar las propuestas de TODOS los partidos que aparezcan en el contexto
 - Nunca digas que no tienes información cuando se proporciona contexto
 - Si se proporciona contexto, significa que se encontró información relevante - extráela y úsala
+- NO te limites a mostrar solo un partido - muestra TODOS los partidos del contexto
 
 FORMATO DE RESPUESTAS (MUY IMPORTANTE):
 
@@ -359,13 +350,13 @@ FORMATO DE RESPUESTAS (MUY IMPORTANTE):
    - Usa subtítulos (###) para subsecciones
    - Separa claramente las propuestas de cada partido
 
-2. **Cuando hay múltiples partidos:**
+2. **Cuando hay múltiples partidos en el contexto:**
    - Agrupa por partido usando títulos: ## Partido Nombre (Abreviatura)
    - Lista las propuestas con viñetas (-) o numeración (1.)
    - Usa negritas (**texto**) para destacar conceptos clave
    - Compara propuestas cuando sea relevante
 
-3. **Cuando es un solo partido:**
+3. **Cuando es un solo partido en el contexto:**
    - Usa estructura: ## Propuestas del [Partido]
    - Organiza en categorías con subtítulos si hay múltiples temas
    - Usa viñetas para listar propuestas específicas
@@ -376,7 +367,7 @@ FORMATO DE RESPUESTAS (MUY IMPORTANTE):
    - Mantén consistencia en el formato
 
 5. **Citas y referencias:**
-   - Siempre menciona el partido: "Según el plan del PLN...", "El FA propone...", "El PUSC establece..."
+   - Siempre menciona el partido según aparece en el contexto
    - Usa formato: **Partido (Abreviatura):** seguido de la propuesta
 
 6. **Legibilidad:**
@@ -399,19 +390,14 @@ EJEMPLO DE FORMATO CORRECTO:
 - Alcanzar gradualmente el 8% del PIB para educación
 - Garantizar financiamiento creciente mediante negociación justa del FEES
 
-### Partido Liberación Nacional (PLN)
-
-**Acceso y calidad:**
-- Ampliar programas de becas estudiantiles
-- Mejorar infraestructura universitaria
-
 ---
 
 REGLAS IMPORTANTES:
 - SIEMPRE usa títulos markdown (## o ###) para secciones principales
-- Cuando hay múltiples partidos, cada uno debe tener su propio título (## o ###)
+- Cuando hay múltiples partidos en el contexto, cada uno debe tener su propio título
 - Usa negritas (**texto**) para conceptos clave dentro de las listas
 - Mantén párrafos cortos y usa listas en lugar de texto largo
+- NUNCA menciones partidos que no aparecen en el contexto proporcionado
 ---
 
 Tu rol es:
@@ -421,7 +407,7 @@ Tu rol es:
 - Responder preguntas claramente y de forma concisa EN ESPAÑOL
 - Mantener neutralidad política y objetividad
 
-RECUERDA: Si se proporciona contexto, contiene la respuesta. Extráela y preséntala claramente usando el formato especificado arriba. Responde SIEMPRE en español.`;
+RECUERDA: Si se proporciona contexto, contiene la respuesta. Extráela y preséntala claramente usando el formato especificado arriba. Solo presenta información de partidos que están en el contexto. Responde SIEMPRE en español.`;
     }
 
     /**

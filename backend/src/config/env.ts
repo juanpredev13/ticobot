@@ -31,6 +31,10 @@ const envSchema = z.object({
   GOOGLE_API_KEY: z.string().optional(),
   GOOGLE_MODEL: z.string().default('gemini-pro'),
 
+  // Ollama configuration (local LLM)
+  OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
+  OLLAMA_MODEL: z.string().default('qwen2.5:14b'),
+
   // Supabase configuration
   SUPABASE_URL: z.string().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),

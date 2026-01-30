@@ -88,8 +88,11 @@ export class ProviderFactory {
         throw new Error('Anthropic LLM provider not yet implemented');
       case 'google':
         throw new Error('Google LLM provider not yet implemented');
-      case 'ollama':
-        throw new Error('Ollama LLM provider not yet implemented');
+      case 'ollama': {
+        const { OllamaLLMProvider } = await import('../providers/llm/OllamaLLMProvider.js');
+        this.llmProviderInstance = new OllamaLLMProvider(env);
+        return this.llmProviderInstance;
+      }
       default:
         throw new Error(`Unknown LLM provider: ${env.LLM_PROVIDER}`);
     }
