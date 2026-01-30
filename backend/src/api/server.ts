@@ -68,7 +68,14 @@ export function createApp(): Express {
 
     // Request logging middleware
     app.use((req: Request, res: Response, next: NextFunction) => {
-        logger.info(`${req.method} ${req.path}`);
+        const now = new Date();
+        const timestamp = now.toLocaleTimeString('es-CR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        logger.info(`[${timestamp}] ${req.method} ${req.path}`);
         next();
     });
 

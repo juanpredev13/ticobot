@@ -34,6 +34,19 @@ export interface RequestConfig extends RequestInit {
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
+ * Get formatted timestamp for logging
+ */
+const getTimestamp = (): string => {
+  const now = new Date();
+  return now.toLocaleTimeString('es-CR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+};
+
+/**
  * Check if an error is retryable
  */
 const isRetryableError = (status: number): boolean => {
@@ -64,10 +77,14 @@ export async function apiClient<T>(
   let lastError: Error | null = null;
   let attempts = 0;
 
+  // Log request
+  const method = (config.method || 'GET').toUpperCase();
+  console.log(`[${getTimestamp()}] → ${method} ${endpoint}`);
+
   while (attempts <= retry) {
     try {
       // Get access token from localStorage if available
-      const accessToken = typeof window !== 'undefined' 
+      const accessToken = typeof window !== 'undefined'
         ? localStorage.getItem('accessToken')
         : null;
 
@@ -82,6 +99,9 @@ export async function apiClient<T>(
       });
 
       clearTimeout(timeoutId);
+
+      // Log response
+      console.log(`[${getTimestamp()}] ← ${response.status} ${endpoint}`);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

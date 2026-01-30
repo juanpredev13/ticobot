@@ -9,8 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
 import { getUsageStatus, incrementChatUsage, canSendMessage, type UsageStatus } from "@/lib/usage-tracker"
 import { UsageBanner } from "@/components/usage-banner"
 import { AuthDialog } from "@/components/auth-dialog"
@@ -39,13 +37,10 @@ type Message = {
 type AuthMode = "signup" | "signin"
 
 const SUGGESTED_QUESTIONS = [
-  "¿Qué proponen el PLN y el FA sobre educación superior?",
-  "¿Cuáles son las propuestas del PUSC y CAC para mejorar el sistema de salud?",
-  "¿Qué planes tienen el PLN, FA y PS para generar empleo?",
-  "¿Cómo abordan el PUSC y el PLN la seguridad ciudadana?",
-  "¿Cuál es el candidato presidencial del PLN?",
+  "¿Qué proponen el PLN y el FA sobre educación?",
+  "¿Cuáles son las propuestas del PUSC y CAC para salud?",
+  "¿Cómo abordan el PUSC y el PLN la seguridad?",
   "¿Qué proponen el FA y PS sobre cambio climático?",
-  "¿Cuáles son las propuestas del CAC y PLN sobre transporte público?",
   "¿Qué planes tienen el PUSC y FA para la economía?",
 ]
 
@@ -257,34 +252,22 @@ function ChatContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-[100dvh] bg-background flex flex-col">
+      <div className="container mx-auto px-4 py-4 md:py-8 flex-1 flex flex-col overflow-hidden">
         {/* Page Title */}
-        <div className="mb-8">
+        <div className="mb-4 md:mb-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="mb-2 text-3xl font-bold">Asistente de preguntas</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-xl md:text-3xl font-bold">Asistente de preguntas</h1>
+              <p className="text-muted-foreground text-sm hidden md:block">
                 Pregunta sobre propuestas políticas y obtén respuestas con fuentes verificadas
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Streaming Toggle */}
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="streaming-mode"
-                  checked={streamingEnabled}
-                  onCheckedChange={setStreamingEnabled}
-                  disabled={isLoading}
-                />
-                <Label htmlFor="streaming-mode" className="text-sm cursor-pointer">
-                  Streaming
-                </Label>
-              </div>
               {messages.length > 0 && (
                 <Button variant="outline" size="sm" onClick={handleClearHistory}>
                   <Trash2 className="size-4" />
-                  Limpiar
+                  <span className="hidden md:inline ml-1">Limpiar</span>
                 </Button>
               )}
             </div>
@@ -292,7 +275,7 @@ function ChatContent() {
         </div>
 
         {usageStatus && (
-          <div className="mb-6">
+          <div className="mb-4 hidden md:block flex-shrink-0">
             <UsageBanner status={usageStatus} onUpgrade={handleUpgrade} />
           </div>
         )}
@@ -313,15 +296,14 @@ function ChatContent() {
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[1fr_380px] gap-6 min-h-0 overflow-hidden">
           {/* Chat Area */}
-          <div className="flex flex-col">
-            <Card className="flex flex-1 flex-col">
-              <CardContent className="flex flex-1 flex-col p-0">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <CardContent className="flex-1 flex flex-col p-0 min-h-0 overflow-hidden">
                 {/* Messages */}
                 <div
-                  className="flex-1 space-y-6 overflow-y-auto p-6"
-                  style={{ minHeight: "500px", maxHeight: "calc(100vh - 400px)" }}
+                  className="flex-1 space-y-6 overflow-y-auto p-4 md:p-6"
                 >
                   {messages.length === 0 ? (
                     // Empty State
@@ -457,7 +439,7 @@ function ChatContent() {
                 </div>
 
                 {/* Input Area */}
-                <div ref={inputContainerRef} className="border-t border-border bg-muted/30 p-4">
+                <div ref={inputContainerRef} className="flex-shrink-0 border-t border-border bg-muted/30 p-4">
                   <div className="flex gap-2">
                     <Input
                       ref={inputRef}
@@ -487,16 +469,16 @@ function ChatContent() {
                       </Button>
                     )}
                   </div>
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    Presiona Enter para enviar • Shift + Enter para nueva línea
+                  <div className="mt-2 text-xs text-muted-foreground hidden md:block">
+                    Presiona Enter para enviar
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Sidebar - Hidden on mobile */}
+          <div className="hidden lg:block space-y-6 overflow-y-auto">
             {/* Suggested Questions */}
             <Card>
               <CardHeader>

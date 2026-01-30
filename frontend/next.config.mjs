@@ -8,6 +8,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Hide dev indicators for demo mode
+  devIndicators: false,
   // Explicitly define environment variables for Railway
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
