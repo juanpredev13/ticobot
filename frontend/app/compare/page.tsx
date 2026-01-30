@@ -57,6 +57,23 @@ function getStateBadgeVariant(state: ProposalState): "default" | "secondary" | "
  * Calculate topic coverage based on sources and answer length
  * Returns a label and color for the coverage level
  */
+/**
+ * Get TSE PDF URL for a party
+ * Maps party abbreviations to TSE document URLs
+ */
+function getTsePdfUrl(partyAbbreviation: string | null): string | null {
+  if (!partyAbbreviation) return null;
+
+  // Map special cases where our abbreviation differs from TSE
+  const tseAbbreviationMap: Record<string, string> = {
+    'PS': 'PPSO',      // Pueblo Soberano
+    'PUSC': 'PUSC',    // Unidad Social Cristiana
+  };
+
+  const tseAbbrev = tseAbbreviationMap[partyAbbreviation.toUpperCase()] || partyAbbreviation.toUpperCase();
+  return `https://www.tse.go.cr/2026/docus/planesgobierno/${tseAbbrev}.pdf`;
+}
+
 function getTopicCoverage(sourcesCount: number, answerLength: number): {
   label: string;
   level: "alta" | "media" | "baja";
@@ -405,14 +422,16 @@ export default function ComparePage() {
                                   </div>
                                 ))}
                         </div>
-                              {comparison.sources[0]?.documentId && (
-                                <Button variant="outline" size="sm" className="mt-3 h-8 text-xs bg-transparent" asChild>
-                                  <Link href={`/documents`} target="_blank" rel="noopener noreferrer">
-                            Ver documento completo
-                            <ExternalLink className="ml-2 size-3" />
-                          </Link>
-                        </Button>
-                              )}
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {getTsePdfUrl(comparison.partyAbbreviation) && (
+                                  <Button variant="default" size="sm" className="h-8 text-xs" asChild>
+                                    <a href={getTsePdfUrl(comparison.partyAbbreviation)!} target="_blank" rel="noopener noreferrer">
+                                      Ver PDF original (TSE)
+                                      <ExternalLink className="ml-2 size-3" />
+                                    </a>
+                                  </Button>
+                                )}
+                              </div>
                       </div>
                           )}
                     </div>
@@ -452,7 +471,7 @@ export default function ComparePage() {
             </li>
             <li className="flex gap-2">
               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
-              <span>Los estados indican la calidad de la información: Completa, Parcial, Poco clara, o Sin información</span>
+              <span>Los indicadores muestran el nivel de detalle encontrado en cada plan de gobierno</span>
             </li>
             <li className="flex gap-2">
               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
