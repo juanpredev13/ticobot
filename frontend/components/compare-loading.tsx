@@ -179,11 +179,6 @@ export function CompareLoading({ partiesCount, topic }: CompareLoadingProps) {
           )
         })}
       </div>
-
-      {/* Estimated time */}
-      <p className="mt-6 text-xs text-muted-foreground">
-        Tiempo estimado: {Math.ceil((partiesCount * 30 * (100 - progress)) / 100)} segundos restantes
-      </p>
     </div>
   )
 }

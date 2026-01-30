@@ -10,7 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCompareProposals, useParties } from "@/lib/hooks"
 import { ProposalState } from "@/lib/api/services/compare"
 import Link from "next/link"
-import { createPartyColorMap, getPartyPrimaryColor } from "@/lib/utils/party-colors"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { createPartyColorMap, getPartyPrimaryColor, getPartySecondaryColor } from "@/lib/utils/party-colors"
 import { CompareLoading } from "@/components/compare-loading"
 
 const TOPICS = ["Educación", "Salud", "Empleo", "Seguridad", "Ambiente", "Economía", "Infraestructura", "Corrupción"]
@@ -48,6 +50,29 @@ function getStateBadgeVariant(state: ProposalState): "default" | "secondary" | "
       return "outline"
     default:
       return "outline"
+  }
+}
+
+/**
+ * Calculate topic coverage based on sources and answer length
+ * Returns a label and color for the coverage level
+ */
+function getTopicCoverage(sourcesCount: number, answerLength: number): {
+  label: string;
+  level: "alta" | "media" | "baja";
+  color: string;
+} {
+  // Score based on sources (0-50 points) and answer length (0-50 points)
+  const sourcesScore = Math.min(sourcesCount * 15, 45); // 3 sources = 45 points
+  const lengthScore = Math.min(answerLength / 40, 55); // ~2200 chars = 55 points
+  const totalScore = sourcesScore + lengthScore;
+
+  if (totalScore >= 70) {
+    return { label: "Cobertura amplia", level: "alta", color: "text-green-600" };
+  } else if (totalScore >= 40) {
+    return { label: "Cobertura moderada", level: "media", color: "text-yellow-600" };
+  } else {
+    return { label: "Cobertura limitada", level: "baja", color: "text-orange-600" };
   }
 }
 
@@ -277,36 +302,35 @@ export default function ComparePage() {
                 </div>
             <div className="grid gap-6 lg:grid-cols-2">
               {comparisonData.comparisons.map((comparison) => {
+                const primaryColor = getPartyPrimaryColor(comparison.party, partyColorMap);
+                const secondaryColor = getPartySecondaryColor(comparison.party, partyColorMap);
+
                 return (
-                  <Card key={comparison.party} className="flex flex-col">
-                <CardHeader 
-                  className="border-b border-border"
-                  style={{ 
-                    backgroundColor: `${getPartyPrimaryColor(comparison.party, partyColorMap)}15`,
-                    borderLeftColor: getPartyPrimaryColor(comparison.party, partyColorMap),
-                    borderLeftWidth: '4px'
-                  }}
-                >
+                  <Card key={comparison.party} className="flex flex-col overflow-hidden">
+                    {/* Barra de colores del partido */}
+                    <div
+                      className="h-2 w-full"
+                      style={{
+                        background: `linear-gradient(to right, ${primaryColor} 0%, ${primaryColor} 50%, ${secondaryColor} 50%, ${secondaryColor} 100%)`
+                      }}
+                    />
+                <CardHeader className="border-b border-border pt-4">
                   <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <div 
-                              className="size-3 rounded-full"
-                              style={{ backgroundColor: getPartyPrimaryColor(comparison.party, partyColorMap) }}
-                            />
                             <CardTitle className="text-lg">{comparison.partyName}</CardTitle>
                             {getStateIcon(comparison.state)}
                           </div>
                           <p className="mt-1 text-sm text-muted-foreground">
                             {comparison.partyAbbreviation || comparison.party}
                           </p>
-                          <div className="mt-2">
+                          <div className="mt-2 flex items-center gap-2 flex-wrap">
                             <Badge variant={getStateBadgeVariant(comparison.state)} className="text-xs">
                               {comparison.stateLabel}
                             </Badge>
-                            {comparison.confidence > 0 && (
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                Confianza: {Math.round(comparison.confidence * 100)}%
+                            {comparison.state !== ProposalState.SIN_INFORMACION && (
+                              <span className={`text-xs font-medium ${getTopicCoverage(comparison.sources.length, comparison.answer.length).color}`}>
+                                {getTopicCoverage(comparison.sources.length, comparison.answer.length).label}
                               </span>
                             )}
                           </div>
@@ -333,29 +357,50 @@ export default function ComparePage() {
                           {/* Answer/Summary */}
                       <div>
                             <h4 className="mb-2 text-sm font-semibold text-muted-foreground">Propuesta</h4>
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{comparison.answer}</p>
+                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  h1: ({ children }) => <h3 className="text-base font-bold mt-4 mb-2">{children}</h3>,
+                                  h2: ({ children }) => <h3 className="text-base font-bold mt-4 mb-2">{children}</h3>,
+                                  h3: ({ children }) => <h4 className="text-sm font-semibold mt-3 mb-1">{children}</h4>,
+                                  h4: ({ children }) => <h5 className="text-sm font-medium mt-2 mb-1">{children}</h5>,
+                                  p: ({ children }) => <p className="text-sm leading-relaxed mb-2">{children}</p>,
+                                  ul: ({ children }) => <ul className="list-disc list-inside text-sm space-y-1 mb-2">{children}</ul>,
+                                  ol: ({ children }) => <ol className="list-decimal list-inside text-sm space-y-1 mb-2">{children}</ol>,
+                                  li: ({ children }) => <li className="text-sm">{children}</li>,
+                                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                }}
+                              >
+                                {comparison.answer}
+                              </ReactMarkdown>
+                            </div>
                       </div>
 
                           {/* Sources */}
                           {comparison.sources.length > 0 && (
                       <div className="rounded-lg border border-border bg-muted/30 p-4">
-                        <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                        <div className="mb-3 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                           <FileText className="size-3.5" />
-                                Fuentes ({comparison.sources.length})
+                                Referencias del Plan de Gobierno
                               </div>
-                              <div className="space-y-2">
+                              <div className="space-y-3">
                                 {comparison.sources.map((source, index) => (
-                                  <div key={`${source.documentId || index}-${index}`} className="text-xs">
-                                    <p className="mb-1 text-muted-foreground line-clamp-2">
-                                      {source.content}
-                                    </p>
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                      {source.pageNumber && (
-                                        <span>Página {source.pageNumber}</span>
-                                      )}
-                                      {source.relevance > 0 && (
-                                        <span>• Relevancia: {Math.round(source.relevance * 100)}%</span>
-                                      )}
+                                  <div key={`${source.documentId || index}-${index}`} className="flex gap-3 p-2 rounded-md bg-background/50 border border-border/50">
+                                    <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[50px] px-2 py-1 bg-primary/10 rounded text-center">
+                                      <span className="text-[10px] text-muted-foreground uppercase">Pág.</span>
+                                      <span className="text-sm font-semibold text-primary">
+                                        {source.pageRange
+                                          ? (source.pageRange.start === source.pageRange.end
+                                              ? source.pageRange.start
+                                              : `${source.pageRange.start}-${source.pageRange.end}`)
+                                          : source.pageNumber || '—'}
+                                      </span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                        "{source.content}"
+                                      </p>
                                     </div>
                                   </div>
                                 ))}
