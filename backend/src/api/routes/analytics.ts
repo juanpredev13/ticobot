@@ -265,7 +265,26 @@ router.get('/user-activity', async (req, res, next) => {
 });
 
 // Helper functions
-function aggregateUTMSources(visits: any[]) {
+interface UTMVisit {
+  utm_source: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+}
+
+interface AnalyticsEvent {
+  event_name: string;
+  event_data?: Record<string, any>;
+}
+
+interface SocialConversion {
+  platform: string;
+  action?: string;
+  user_id?: string;
+}
+
+function aggregateUTMSources(visits: (UTMVisit & { utm_source?: string })[]) {
   const sources: Record<string, number> = {};
   visits.forEach(visit => {
     const source = visit.utm_source || 'direct';
@@ -277,7 +296,7 @@ function aggregateUTMSources(visits: any[]) {
     .map(([source, count]) => ({ source, count: count as number }));
 }
 
-function aggregateEvents(events: any[]) {
+function aggregateEvents(events: AnalyticsEvent[]) {
   const eventCounts: Record<string, number> = {};
   events.forEach(event => {
     const eventName = event.event_name;
@@ -289,7 +308,7 @@ function aggregateEvents(events: any[]) {
     .map(([event, count]) => ({ event, count: count as number }));
 }
 
-function aggregateConversions(conversions: any[]) {
+function aggregateConversions(conversions: SocialConversion[]) {
   const platforms: Record<string, number> = {};
   conversions.forEach(conv => {
     const platform = conv.platform;
