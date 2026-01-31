@@ -162,17 +162,6 @@ export const metadata: Metadata = {
         type: "image/png",
       },
     ],
-    other: [
-      {
-        rel: "mask-icon",
-        url: "/safari-pinned-tab.svg",
-        color: "#5bbad5",
-      },
-      {
-        rel: "manifest",
-        url: "/site.webmanifest",
-      },
-    ],
   },
   manifest: "/site.webmanifest",
   other: {
