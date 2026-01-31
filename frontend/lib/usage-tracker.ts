@@ -1,6 +1,6 @@
 // Usage tracking for 2-tier system
-// Tier 1: 3 free anonymous chats
-// Tier 2: 13 total chats (10 more) with account
+// Tier 1: 10 free anonymous chats
+// Tier 2: 20 total chats (10 more) with account
 
 export type UsageStatus = {
   tier: "anonymous" | "authenticated"
@@ -15,8 +15,8 @@ export type UsageStatus = {
 const isDevelopment = process.env.NODE_ENV === 'development' || 
   (typeof window !== 'undefined' && window.location.hostname === 'localhost')
 
-const ANONYMOUS_LIMIT = isDevelopment ? 9999 : 3
-const AUTHENTICATED_LIMIT = isDevelopment ? 9999 : 13
+const ANONYMOUS_LIMIT = isDevelopment ? 9999 : 10
+const AUTHENTICATED_LIMIT = isDevelopment ? 9999 : 20
 
 export function getUsageStatus(isAuthenticated: boolean): UsageStatus {
   if (isAuthenticated) {

@@ -4,7 +4,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 // In development, use much higher limits for easier testing
 const isDevelopment = process.env.NODE_ENV === 'development';
 
-const DEFAULT_QUERY_LIMIT_FREE = isDevelopment ? 9999 : 10;
+const DEFAULT_QUERY_LIMIT_FREE = isDevelopment ? 9999 : 15;
 const DEFAULT_QUERY_LIMIT_PREMIUM = isDevelopment ? 9999 : 100;
 const DEFAULT_QUERY_LIMIT_ADMIN = 999999;
 
