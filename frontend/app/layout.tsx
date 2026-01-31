@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://ticobot.com"),
+  metadataBase: new URL("https://ticobot.xyz"),
   alternates: {
     canonical: "/",
     languages: {
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "TicoBot - Comparación neutral de propuestas políticas",
     description: "Plataforma de información electoral para Costa Rica. Compara propuestas políticas de forma neutral y transparente.",
-    url: "https://ticobot.com",
+    url: "https://ticobot.xyz",
     siteName: "TicoBot",
     images: [
       {
