@@ -15,14 +15,10 @@ name = "backend"
 
 [services.build]
 builder = "NIXPACKS"
-# Build shared package first, then backend (monorepo shared pattern)
-# Include devDependencies needed for build (TypeScript, etc.)
-# The warning about --production is harmless, but we need devDeps for the build
-command = "NPM_CONFIG_PRODUCTION=false pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/backend build"
+buildCommand = "cd backend && NPM_CONFIG_PRODUCTION=false pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm build"
 
 [services.deploy]
-# Use pnpm --filter for workspace-aware execution (Railway best practice)
-startCommand = "pnpm --filter @ticobot/backend start"
+startCommand = "cd backend && pnpm start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
@@ -36,14 +32,9 @@ name = "frontend"
 
 [services.build]
 builder = "NIXPACKS"
-# Build shared package first, then frontend (monorepo shared pattern)
-# Include devDependencies needed for build (TypeScript, etc.)
-# The warning about --production is harmless, but we need devDeps for the build
-command = "NPM_CONFIG_PRODUCTION=false pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm --filter @ticobot/frontend build"
+buildCommand = "cd frontend && NPM_CONFIG_PRODUCTION=false pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm build"
 
 [services.deploy]
-# Use pnpm --filter for workspace-aware execution (Railway best practice)
-# Next.js automatically detects PORT environment variable from Railway
 startCommand = "cd frontend && pnpm start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
