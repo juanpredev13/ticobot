@@ -70,3 +70,6 @@ backend/src/scripts/*
 !backend/src/scripts/debugVectorSearch.ts
 !backend/src/scripts/testMatchChunks.ts
 !backend/src/scripts/testRealQuery.ts
+
+# Documentation
+docs/
