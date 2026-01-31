@@ -14,7 +14,7 @@ import { useChat, useChatStream, useUser, useParties } from "@/lib/hooks"
 import { PageErrorBoundary } from "@/components/page-error-boundary"
 import type { ChatResponse } from "@/lib/api/types"
 import { createPartyColorMap, getPartyPrimaryColor } from "@/lib/utils/party-colors"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 function getTsePdfUrl(partyAbbreviation: string | null): string | null {
   if (!partyAbbreviation) return null;
@@ -66,6 +66,8 @@ function ChatContent() {
   const inputRef = useRef<HTMLInputElement>(null)
   const inputContainerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [initialQueryProcessed, setInitialQueryProcessed] = useState(false)
 
   // React Query hooks
   const { data: user, isLoading: userLoading } = useUser()
@@ -96,6 +98,21 @@ function ChatContent() {
       setTimeout(focusInput, 200)
     })
   }, [])
+
+  // Handle initial query from URL parameter
+  useEffect(() => {
+    if (!initialQueryProcessed && !userLoading) {
+      const queryParam = searchParams.get('q')
+      if (queryParam && queryParam.trim()) {
+        setInputValue(queryParam.trim())
+        // Auto-send the query after a short delay to allow UI to render
+        setTimeout(() => {
+          handleSendMessage()
+        }, 500)
+      }
+      setInitialQueryProcessed(true)
+    }
+  }, [initialQueryProcessed, userLoading, searchParams])
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return
