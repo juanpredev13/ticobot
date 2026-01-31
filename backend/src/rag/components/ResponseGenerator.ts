@@ -91,7 +91,7 @@ export class ResponseGenerator {
             // Generate completion
             const response: LLMResponse = await llmProvider.generateCompletion(messages, {
                 temperature: options?.temperature ?? 0.7,
-                maxTokens: options?.maxTokens ?? 1000,
+                maxTokens: options?.maxTokens ?? 800,
             });
 
             const confidence = this.calculateConfidence(response, context);
@@ -146,7 +146,7 @@ export class ResponseGenerator {
             // Generate streaming completion
             for await (const chunk of llmProvider.generateStreamingCompletion(messages, {
                 temperature: options?.temperature ?? 0.7,
-                maxTokens: options?.maxTokens ?? 1000,
+                maxTokens: options?.maxTokens ?? 800,
             })) {
                 yield chunk;
             }

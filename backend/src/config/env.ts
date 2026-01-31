@@ -37,7 +37,7 @@ const envSchema = z.object({
 
   // Groq configuration (fast inference, free tier)
   GROQ_API_KEY: z.string().optional(),
-  GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+  GROQ_MODEL: z.string().default('llama-3.1-8b-instant'),
 
   // Supabase configuration
   SUPABASE_URL: z.string().optional(),
