@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { Router, type Request, type Response, type NextFunction, type Router as ExpressRouter } from "express";
 import { Logger } from "@ticobot/shared";
 import { createSupabaseClient } from "../../db/supabase.js";
 
 const logger = new Logger("AnalyticsRoutes");
-const router = Router();
+const router: ExpressRouter = Router();
 const supabase = createSupabaseClient();
 
 /**
