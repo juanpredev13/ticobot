@@ -16,6 +16,19 @@ import type { ChatResponse } from "@/lib/api/types"
 import { createPartyColorMap, getPartyPrimaryColor } from "@/lib/utils/party-colors"
 import { useRouter } from "next/navigation"
 
+function getTsePdfUrl(partyAbbreviation: string | null): string | null {
+  if (!partyAbbreviation) return null;
+
+  // Map special cases where our abbreviation differs from TSE
+  const tseAbbreviationMap: Record<string, string> = {
+    'PS': 'PPSO',      // Pueblo Soberano
+    'PUSC': 'PUSC',    // Unidad Social Cristiana
+  };
+
+  const tseAbbrev = tseAbbreviationMap[partyAbbreviation.toUpperCase()] || partyAbbreviation.toUpperCase();
+  return `https://www.tse.go.cr/2026/docus/planesgobierno/${tseAbbrev}.pdf`;
+}
+
 type Message = {
   id: string
   role: "user" | "assistant"
@@ -336,7 +349,7 @@ function ChatContent() {
                           </div>
                           )}
 
-                          {/* Sources (only for assistant messages) */}
+{/* Sources (only for assistant messages) */}
                           {message.role === "assistant" && message.sources && message.sources.length > 0 && (
                             <div className="mt-3 space-y-2">
                               <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -344,37 +357,64 @@ function ChatContent() {
                                 Fuentes consultadas
                               </div>
                               <div className="space-y-2">
-                                {message.sources.map((source, index) => {
-                                  const partyColor = getPartyPrimaryColor(source.metadata?.party, partyColorMap)
-                                  return (
-                                    <div key={index} className="rounded-lg border border-border bg-muted/30 p-3">
-                                      <div className="mb-1 flex items-start justify-between gap-2">
-                                        <div>
-                                          <div className="text-xs font-semibold">{source.title}</div>
-                                          {source.metadata?.party && (
-                                            <div className="mt-1 flex items-center gap-2">
-                                              <div 
-                                                className="size-2 rounded-full"
-                                                style={{ backgroundColor: partyColor }}
-                                              />
-                                              <span className="text-xs text-muted-foreground">
-                                                {source.metadata.party}
-                                                {source.metadata.page && `, pág. ${source.metadata.page}`}
-                                              </span>
-                                            </div>
-                                          )}
-                                        </div>
-                                        <Badge variant="secondary" className="shrink-0 text-xs">
-                                          {(source.score * 100).toFixed(0)}%
-                                        </Badge>
+                                {message.sources.map((source, index) => (
+                                  <div key={index} className="rounded-lg border border-border bg-muted/30 p-3">
+                                    <div className="mb-3 flex items-start justify-between gap-2">
+                                      <div className="flex-1">
+                                        <div className="text-xs font-semibold">{source.title}</div>
+                                        {source.metadata?.party && (
+                                          <div className="mt-1 flex items-center gap-2">
+                                            <div 
+                                              className="size-2 rounded-full"
+                                              style={{ backgroundColor: getPartyPrimaryColor(source.metadata.party, partyColorMap) }}
+                                            />
+                                            <span className="text-xs text-muted-foreground">
+                                              {source.metadata.party}
+                                            </span>
+                                          </div>
+                                        )}
                                       </div>
-                                      <p className="mb-2 text-xs leading-relaxed text-muted-foreground line-clamp-3">
-                                        {source.content}
-                                      </p>
+                                      <Badge variant="secondary" className="shrink-0 text-xs">
+                                        {(source.score * 100).toFixed(0)}%
+                                      </Badge>
                                     </div>
-                                  )
-                                })}
+                                    
+                                    <div className="flex gap-3 p-2 rounded-md bg-background/50 border border-border/50">
+                                      {source.metadata?.page && (
+                                        <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[50px] px-2 py-1 bg-primary/10 rounded text-center">
+                                          <span className="text-[10px] text-muted-foreground uppercase">Pág.</span>
+                                          <span className="text-sm font-semibold text-primary">
+                                            {source.metadata.page}
+                                          </span>
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                                          "{source.content}"
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
+                              
+                              {/* TSE PDF link */}
+                              {message.sources.some(source => source.metadata?.party) && (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {Array.from(new Set(message.sources.map(source => source.metadata?.party).filter((p): p is string => Boolean(p))))
+                                    .map(party => {
+                                      const pdfUrl = getTsePdfUrl(party);
+                                      return pdfUrl ? (
+                                        <Button key={party} variant="default" size="sm" className="h-8 text-xs" asChild>
+                                          <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                                            Ver PDF original ({party})
+                                            <ExternalLink className="ml-2 size-3" />
+                                          </a>
+                                        </Button>
+                                      ) : null;
+                                    })}
+                                </div>
+                              )}
                             </div>
                           )}
 
