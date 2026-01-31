@@ -6,6 +6,30 @@ import { Logger } from '@ticobot/shared';
 const router: Router = Router();
 const logger = new Logger('DocumentsAPI');
 
+// Official TSE URLs mapping
+const TSE_URLS: Record<string, string> = {
+  'PLN': 'https://www.tse.go.cr/2026/docus/planesgobierno/PLN.pdf',
+  'PAC': 'https://www.tse.go.cr/2026/docus/planesgobierno/PA.pdf',
+  'PUSC': 'https://www.tse.go.cr/2026/docus/planesgobierno/PUSC.pdf',
+  'FA': 'https://www.tse.go.cr/2026/docus/planesgobierno/FA.pdf',
+  'PPSO': 'https://www.tse.go.cr/2026/docus/planesgobierno/PPSO.pdf',
+  'PIN': 'https://www.tse.go.cr/2026/docus/planesgobierno/PIN.pdf',
+  'PLP': 'https://www.tse.go.cr/2026/docus/planesgobierno/PLP.pdf',
+  'PNR': 'https://www.tse.go.cr/2026/docus/planesgobierno/PNR.pdf',
+  'PSD': 'https://www.tse.go.cr/2026/docus/planesgobierno/PSD.pdf',
+  'UP': 'https://www.tse.go.cr/2026/docus/planesgobierno/UP.pdf',
+  'PUCD': 'https://www.tse.go.cr/2026/docus/planesgobierno/PUCD.pdf',
+  'PNG': 'https://www.tse.go.cr/2026/docus/planesgobierno/PNG.pdf',
+  'CDS': 'https://www.tse.go.cr/2026/docus/planesgobierno/CDS.pdf',
+  'CAC': 'https://www.tse.go.cr/2026/docus/planesgobierno/CAC.pdf',
+  'PDLCT': 'https://www.tse.go.cr/2026/docus/planesgobierno/PDLCT.pdf',
+  'PEN': 'https://www.tse.go.cr/2026/docus/planesgobierno/PEN.pdf',
+  'PEL': 'https://www.tse.go.cr/2026/docus/planesgobierno/PEL.pdf',
+  'PJSC': 'https://www.tse.go.cr/2026/docus/planesgobierno/PJSC.pdf',
+  'ACRM': 'https://www.tse.go.cr/2026/docus/planesgobierno/ACRM.pdf',
+  'CR1': 'https://www.tse.go.cr/2026/docus/planesgobierno/CR1.pdf'
+};
+
 // Lazy initialization - only create client when needed
 let supabaseClient: SupabaseClient | null = null;
 
@@ -136,16 +160,17 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
             partiesMap.set(party.id, party);
         });
 
-        // Transform documents to include party abbreviation
+// Transform documents to include party abbreviation and official TSE URL
         const documents = (data || []).map((doc: any) => {
             // Check if party_id is a UUID (length 36 with dashes) or a string abbreviation
             const isUUID = typeof doc.party_id === 'string' && 
                           doc.party_id.length === 36 && 
                           /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(doc.party_id);
-            
+             
             let party = null;
             let partyAbbreviation: string;
             let partySlug: string | null = null;
+            let tseUrl: string | null = null;
 
             if (isUUID) {
                 // party_id is a UUID, look it up in parties table
@@ -164,10 +189,15 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
                 }
             }
 
+            // Get official TSE URL using party abbreviation
+            const partyKey = partyAbbreviation.toUpperCase();
+            tseUrl = TSE_URLS[partyKey] || null;
+
             return {
                 ...doc,
                 party_abbreviation: partyAbbreviation,
                 party_slug: partySlug,
+                url: tseUrl || doc.url, // Use TSE URL if available, fallback to existing URL
             };
         });
 
