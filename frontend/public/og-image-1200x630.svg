@@ -1,0 +1,47 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6B7280;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4B5563;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <!-- Main content area -->
+  <rect x="60" y="60" width="1080" height="510" rx="24" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+  
+  <!-- Logo -->
+  <rect x="80" y="80" width="80" height="80" rx="16" fill="white"/>
+  <rect x="100" y="100" width="40" height="40" rx="8" fill="#6B7280"/>
+  
+  <!-- Title -->
+  <text x="200" y="140" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="white">
+    TicoBot
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="200" y="180" font-family="Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.9)">
+    Comparación neutral de propuestas políticas
+  </text>
+  
+  <!-- Description -->
+  <text x="80" y="280" font-family="Arial, sans-serif" font-size="20" fill="rgba(255,255,255,0.8)" max-width="1040">
+    Plataforma de información electoral para Costa Rica.
+  </text>
+  <text x="80" y="310" font-family="Arial, sans-serif" font-size="20" fill="rgba(255,255,255,0.8)">
+    Compara propuestas políticas de forma neutral y transparente.
+  </text>
+  
+  <!-- Decorative elements -->
+  <circle cx="950" cy="150" r="30" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="1000" cy="180" r="20" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="1050" cy="140" r="25" fill="rgba(255,255,255,0.1)"/>
+  
+  <!-- Bottom text -->
+  <text x="80" y="520" font-family="Arial, sans-serif" font-size="16" fill="rgba(255,255,255,0.6)">
+    ticobot.com
+  </text>
+</svg>

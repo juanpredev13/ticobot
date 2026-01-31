@@ -1,0 +1,50 @@
+{
+  "name": "TicoBot - Comparación neutral de propuestas políticas",
+  "short_name": "TicoBot",
+  "description": "Plataforma de información electoral para Costa Rica. Compara propuestas políticas de forma neutral y transparente.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#6B7280",
+  "theme_color": "#6B7280",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "es-CR",
+  "categories": ["news", "politics", "education", "reference"],
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Comparar propuestas",
+      "short_name": "Comparar",
+      "description": "Compara propuestas de los candidatos",
+      "url": "/comparar",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Desktop view of TicoBot"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6B7280;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4B5563;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="1200" fill="url(#bgGradient)"/>
+  
+  <!-- Central logo circle -->
+  <circle cx="600" cy="600" r="280" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="4"/>
+  <rect x="520" y="520" width="160" height="160" rx="32" fill="white"/>
+  <rect x="560" y="560" width="80" height="80" rx="16" fill="#6B7280"/>
+  
+  <!-- Title -->
+  <text x="600" y="900" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">
+    TicoBot
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="600" y="960" font-family="Arial, sans-serif" font-size="32" fill="rgba(255,255,255,0.9)" text-anchor="middle">
+    Comparación política neutral
+  </text>
+  
+  <!-- Decorative circles -->
+  <circle cx="200" cy="200" r="40" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="1000" cy="200" r="30" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="200" cy="1000" r="35" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="1000" cy="1000" r="45" fill="rgba(255,255,255,0.1)"/>
+</svg>
