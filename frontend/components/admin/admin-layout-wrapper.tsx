@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation"
 import { SiteHeader } from "@/components/site-header"
 import { BottomMobileNav } from "@/components/bottom-mobile-nav"
+import { SiteFooter } from "@/components/site-footer"
 
 export function AdminLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -15,7 +16,10 @@ export function AdminLayoutWrapper({ children }: { children: React.ReactNode }) 
   return (
     <>
       <SiteHeader />
-      <div className="pb-16 md:pb-0">{children}</div>
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-1 pb-16 md:pb-0">{children}</main>
+        <SiteFooter />
+      </div>
       <BottomMobileNav />
     </>
   )
