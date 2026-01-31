@@ -8,14 +8,26 @@
  * - Forensic analysis
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
 import { Request } from 'express';
 
-const supabase = createClient(
-  env.SUPABASE_URL ?? '',
-  env.SUPABASE_SERVICE_ROLE_KEY ?? ''
-);
+// Lazy initialization - only create client when needed and when configured
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient | null {
+  if (supabaseClient) {
+    return supabaseClient;
+  }
+
+  // Only create client if Supabase is configured
+  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+    supabaseClient = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+    return supabaseClient;
+  }
+
+  return null;
+}
 
 export type EventCategory = 'auth' | 'query' | 'admin' | 'security';
 export type EventSeverity = 'info' | 'warning' | 'error' | 'critical';
@@ -38,6 +50,14 @@ export async function logAuditEvent(
   event: AuditLogEvent,
   req?: Request
 ): Promise<void> {
+  const supabase = getSupabase();
+
+  // Skip if Supabase is not configured (e.g., using different database provider)
+  if (!supabase) {
+    console.debug('[AUDIT LOG] Skipping - Supabase not configured');
+    return;
+  }
+
   const ip = req?.ip || req?.socket.remoteAddress || null;
   const userAgent = req?.headers['user-agent'] || null;
 
@@ -268,6 +288,13 @@ export const auditLog = {
  * Get recent critical events (for admin dashboard)
  */
 export async function getRecentCriticalEvents(limit = 50): Promise<unknown[]> {
+  const supabase = getSupabase();
+
+  if (!supabase) {
+    console.debug('[AUDIT LOG] Skipping getRecentCriticalEvents - Supabase not configured');
+    return [];
+  }
+
   const { data, error } = await supabase.rpc('get_recent_critical_events', {
     limit_param: limit,
   });
@@ -284,6 +311,13 @@ export async function getRecentCriticalEvents(limit = 50): Promise<unknown[]> {
  * Get user activity log
  */
 export async function getUserActivity(userId: string, limit = 100): Promise<unknown[]> {
+  const supabase = getSupabase();
+
+  if (!supabase) {
+    console.debug('[AUDIT LOG] Skipping getUserActivity - Supabase not configured');
+    return [];
+  }
+
   const { data, error } = await supabase.rpc('get_user_activity', {
     user_id_param: userId,
     limit_param: limit,

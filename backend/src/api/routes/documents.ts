@@ -1,15 +1,29 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { Logger } from '@ticobot/shared';
 
 const router: Router = Router();
 const logger = new Logger('DocumentsAPI');
 
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Lazy initialization - only create client when needed
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (supabaseClient) {
+    return supabaseClient;
+  }
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for documents API');
+  }
+
+  supabaseClient = createClient(supabaseUrl, supabaseKey);
+  return supabaseClient;
+}
 
 // Validation schemas
 const getDocumentSchema = z.object({
@@ -89,7 +103,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         // Build query - first get documents, then enrich with party info
         // Note: We can't use JOIN directly because some documents have party_id as TEXT (abbreviation)
         // instead of UUID, so we'll fetch parties separately and merge
-        let query = supabase
+        let query = getSupabase()
             .from('documents')
             .select('*', { count: 'exact' })
             .order('created_at', { ascending: false })
@@ -113,7 +127,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         logger.info(`Found ${data?.length || 0} documents (total: ${count || 0})`);
 
         // Fetch all parties to build a lookup map
-        const { data: partiesData } = await supabase
+        const { data: partiesData } = await getSupabase()
             .from('parties')
             .select('id, name, abbreviation, slug');
 
@@ -218,7 +232,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
         logger.info(`Fetching document: ${id}`);
 
-        const { data, error } = await supabase
+        const { data, error } = await getSupabase()
             .from('documents')
             .select('*')
             .eq('id', id)
@@ -335,7 +349,7 @@ router.get('/:id/chunks', async (req: Request, res: Response, next: NextFunction
 
         logger.info(`Fetching chunks for document: ${id} (limit=${params.limit}, offset=${params.offset})`);
 
-        const { data, error, count } = await supabase
+        const { data, error, count } = await getSupabase()
             .from('chunks')
             .select('*', { count: 'exact' })
             .eq('document_id', id)
