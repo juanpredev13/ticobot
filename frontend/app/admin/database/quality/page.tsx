@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -191,7 +191,7 @@ function IssuesList({ issues }: { issues: QualityIssue[] }) {
   );
 }
 
-export default function QualityAnalysisPage() {
+function QualityAnalysisContent() {
   const { data: report, isLoading, error, refetch } = useQuery({
     queryKey: ['quality-analysis'],
     queryFn: fetchQualityReport,
@@ -552,5 +552,20 @@ export default function QualityAnalysisPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function QualityAnalysisPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="mx-auto mb-4 size-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <QualityAnalysisContent />
+    </Suspense>
   );
 }
