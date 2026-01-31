@@ -3,11 +3,13 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Loader2, Mail, Lock, User, CheckCircle } from "lucide-react"
+import { useAuth } from "@/components/providers/auth-provider"
 
 type AuthMode = "signup" | "signin"
 
@@ -23,32 +25,32 @@ export function AuthDialog({ mode, onSuccess, onModeChange }: AuthDialogProps) {
   const [name, setName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const { login, register } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setIsLoading(true)
 
-    // Simulate authentication
-    setTimeout(() => {
+    try {
       if (mode === "signup") {
-        // Store mock user data
-        localStorage.setItem("ticobot_user", JSON.stringify({ email, name }))
-        localStorage.setItem("ticobot_auth", "true")
+        await register(email, password, name)
       } else {
-        // Validate credentials (mock)
-        const stored = localStorage.getItem("ticobot_user")
-        if (stored) {
-          localStorage.setItem("ticobot_auth", "true")
-        } else {
-          setError("No se encontró una cuenta con este correo")
-          setIsLoading(false)
-          return
-        }
+        await login(email, password)
+      }
+      onSuccess()
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError(mode === "signup" 
+          ? "Error al crear cuenta. Por favor, intenta de nuevo." 
+          : "Error al iniciar sesión. Verifica tus credenciales."
+        )
       }
       setIsLoading(false)
-      onSuccess()
-    }, 1000)
+    }
   }
 
   return (
@@ -125,6 +127,19 @@ export function AuthDialog({ mode, onSuccess, onModeChange }: AuthDialogProps) {
                   <p className="text-muted-foreground">Total: 13 conversaciones gratuitas</p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {mode === "signup" && (
+            <div className="text-xs text-muted-foreground">
+              Al crear cuenta, aceptas nuestros{" "}
+              <button 
+                type="button" 
+                onClick={() => window.open("/terminos", "_blank")}
+                className="text-primary hover:underline underline"
+              >
+                Términos y Condiciones
+              </button>
             </div>
           )}
 
