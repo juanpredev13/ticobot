@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import {
   Activity,
   Cpu,
@@ -208,7 +208,8 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="p-8">
+    <Suspense fallback={<div className="flex min-h-[400px] items-center justify-center"><div className="text-center">Loading admin...</div></div>}>
+      <div className="p-8">
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold">Panel de administración</h1>
@@ -557,6 +558,7 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
-    </div>
+      </div>
+    </Suspense>
   )
 }
