@@ -38,20 +38,6 @@ export const metadata: Metadata = {
       "en": "/en",
     },
   },
-  other: [
-    {
-      name: "theme-color",
-      content: "#6B7280",
-    },
-    {
-      name: "msapplication-TileColor",
-      content: "#da532c",
-    },
-    {
-      name: "msapplication-config",
-      content: "/browserconfig.xml",
-    },
-  ],
   openGraph: {
     title: "TicoBot - Comparación neutral de propuestas políticas",
     description: "Plataforma de información electoral para Costa Rica. Compara propuestas políticas de forma neutral y transparente.",
@@ -81,10 +67,6 @@ export const metadata: Metadata = {
     images: ["/og-image-1200x630.png"],
     creator: "@ticobot",
     site: "@ticobot",
-  },
-  app: {
-    name: "TicoBot",
-    url: "https://ticobot.com",
   },
   verification: {
     google: "your-google-verification-code",
@@ -193,20 +175,11 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/site.webmanifest",
-  other: [
-    {
-      name: "theme-color",
-      content: "#6B7280",
-    },
-    {
-      name: "msapplication-TileColor",
-      content: "#da532c",
-    },
-    {
-      name: "msapplication-config",
-      content: "/browserconfig.xml",
-    },
-  ],
+  other: {
+    "theme-color": "#6B7280",
+    "msapplication-TileColor": "#da532c",
+    "msapplication-config": "/browserconfig.xml",
+  },
 }
 
 export default function RootLayout({
