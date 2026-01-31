@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     siteName: "TicoBot",
     images: [
       {
-        url: "/og-image-1200x630.png",
+        url: "/image.png",
         width: 1200,
         height: 630,
         alt: "TicoBot - Comparación neutral de propuestas políticas",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "TicoBot - Comparación neutral de propuestas políticas",
     description: "Plataforma de información electoral para Costa Rica. Compara propuestas políticas de forma neutral y transparente.",
-    images: ["/og-image-1200x630.png"],
+    images: ["/image.png"],
     creator: "@ticobot",
     site: "@ticobot",
   },
