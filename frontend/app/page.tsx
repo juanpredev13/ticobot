@@ -72,7 +72,7 @@ function HomeContent() {
           </h1>
 
           <p className="mb-8 text-pretty text-lg text-muted-foreground md:text-xl">
-            TicoBot te ayuda a hacer preguntas直接 a los candidatos presidenciales de Costa Rica. Obtén respuestas basadas en sus propuestas oficiales de forma neutral e imparcial.
+            TicoBot te ayuda a hacer preguntas directamente a los candidatos presidenciales de Costa Rica. Obtén respuestas basadas en sus propuestas oficiales de forma neutral e imparcial.
           </p>
 
           {/* Search Bar */}
