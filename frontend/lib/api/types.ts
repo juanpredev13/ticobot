@@ -182,6 +182,8 @@ export interface UserProfile {
   email: string;
   name?: string;
   role: 'user' | 'admin';
+  tier?: 'free' | 'premium';
+  emailVerified?: boolean;
   createdAt: string;
 }
 

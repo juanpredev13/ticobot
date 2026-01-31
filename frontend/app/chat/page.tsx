@@ -10,11 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getUsageStatus, incrementChatUsage, canSendMessage, type UsageStatus } from "@/lib/usage-tracker"
 import { UsageBanner } from "@/components/usage-banner"
-import { AuthDialog } from "@/components/auth-dialog"
 import { useChat, useChatStream, useUser, useParties } from "@/lib/hooks"
 import { PageErrorBoundary } from "@/components/page-error-boundary"
 import type { ChatResponse } from "@/lib/api/types"
 import { createPartyColorMap, getPartyPrimaryColor } from "@/lib/utils/party-colors"
+import { useRouter } from "next/navigation"
 
 type Message = {
   id: string
@@ -33,7 +33,7 @@ type Message = {
   timestamp: Date
 }
 
-type AuthMode = "signup" | "signin"
+
 
 const SUGGESTED_QUESTIONS = [
   "¿Qué proponen el PLN y el FA sobre educación?",
@@ -48,12 +48,11 @@ function ChatContent() {
   const [inputValue, setInputValue] = useState("")
   const [conversationId, setConversationId] = useState<string>("")
   const [streamingEnabled, setStreamingEnabled] = useState(true)
-  const [showAuthDialog, setShowAuthDialog] = useState(false)
-  const [authMode, setAuthMode] = useState<AuthMode>("signup")
   const [usageStatus, setUsageStatus] = useState<UsageStatus | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const inputContainerRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   // React Query hooks
   const { data: user, isLoading: userLoading } = useUser()
@@ -90,8 +89,7 @@ function ChatContent() {
 
     if (!canSendMessage(isAuthenticated)) {
       if (!isAuthenticated) {
-        setShowAuthDialog(true)
-        setAuthMode("signup")
+        router.push("/login")
       }
       return
     }
@@ -223,14 +221,8 @@ function ChatContent() {
     setConversationId("")
   }
 
-  const handleAuthSuccess = () => {
-    setShowAuthDialog(false)
-    setUsageStatus(getUsageStatus(true))
-  }
-
   const handleUpgrade = () => {
-    setShowAuthDialog(true)
-    setAuthMode("signup")
+    router.push("/signup")
   }
 
   return (
@@ -259,22 +251,6 @@ function ChatContent() {
         {usageStatus && (
           <div className="mb-4 hidden md:block flex-shrink-0">
             <UsageBanner status={usageStatus} onUpgrade={handleUpgrade} />
-          </div>
-        )}
-
-        {showAuthDialog && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute -right-2 -top-2 z-10"
-                onClick={() => setShowAuthDialog(false)}
-              >
-                ✕
-              </Button>
-              <AuthDialog mode={authMode} onSuccess={handleAuthSuccess} onModeChange={setAuthMode} />
-            </div>
           </div>
         )}
 
