@@ -265,39 +265,39 @@ router.get('/user-activity', async (req, res, next) => {
 });
 
 // Helper functions
-function aggregateUTMSources(visits) {
-  const sources = {};
+function aggregateUTMSources(visits: any[]) {
+  const sources: Record<string, number> = {};
   visits.forEach(visit => {
     const source = visit.utm_source || 'direct';
     sources[source] = (sources[source] || 0) + 1;
   });
   return Object.entries(sources)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, 5)
-    .map(([source, count]) => ({ source, count }));
+    .map(([source, count]) => ({ source, count: count as number }));
 }
 
-function aggregateEvents(events) {
-  const eventCounts = {};
+function aggregateEvents(events: any[]) {
+  const eventCounts: Record<string, number> = {};
   events.forEach(event => {
     const eventName = event.event_name;
     eventCounts[eventName] = (eventCounts[eventName] || 0) + 1;
   });
   return Object.entries(eventCounts)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, 10)
-    .map(([event, count]) => ({ event, count }));
+    .map(([event, count]) => ({ event, count: count as number }));
 }
 
-function aggregateConversions(conversions) {
-  const platforms = {};
+function aggregateConversions(conversions: any[]) {
+  const platforms: Record<string, number> = {};
   conversions.forEach(conv => {
     const platform = conv.platform;
     platforms[platform] = (platforms[platform] || 0) + 1;
   });
   return Object.entries(platforms)
-    .sort(([,a], [,b]) => b - a)
-    .map(([platform, count]) => ({ platform, count }));
+    .sort(([,a], [,b]) => (b as number) - (a as number))
+    .map(([platform, count]) => ({ platform, count: count as number }));
 }
 
 export default router;
