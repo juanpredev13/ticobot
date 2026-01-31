@@ -45,13 +45,13 @@ export const metadata: Metadata = {
     siteName: "TicoBot",
     images: [
       {
-        url: "/og-image-1200x630.svg",
+        url: "/image.png",
         width: 1200,
         height: 630,
         alt: "TicoBot - Comparación neutral de propuestas políticas",
       },
       {
-        url: "/og-image-square.svg",
+        url: "/image.png",
         width: 1200,
         height: 1200,
         alt: "TicoBot Logo",
