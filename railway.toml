@@ -12,34 +12,28 @@
 # Backend service configuration
 [[services]]
 name = "backend"
+source = "."
 
 [services.build]
-builder = "NIXPACKS"
-buildCommand = "cd backend && NPM_CONFIG_PRODUCTION=false pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm build"
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
 
 [services.deploy]
-startCommand = "cd backend && pnpm start"
+healthcheckPath = "/health"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
-
-# Watch paths: only rebuild backend when backend or shared changes
-[services.watch]
-paths = ["backend/**", "shared/**"]
 
 # Frontend service configuration
 [[services]]
 name = "frontend"
+source = "."
 
 [services.build]
-builder = "NIXPACKS"
-buildCommand = "cd frontend && NPM_CONFIG_PRODUCTION=false pnpm install --frozen-lockfile && pnpm --filter @ticobot/shared build && pnpm build"
+builder = "DOCKERFILE"
+dockerfilePath = "frontend/Dockerfile"
 
 [services.deploy]
-startCommand = "cd frontend && pnpm start"
+healthcheckPath = "/"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
-
-# Watch paths: only rebuild frontend when frontend or shared changes
-[services.watch]
-paths = ["frontend/**", "shared/**"]
 
