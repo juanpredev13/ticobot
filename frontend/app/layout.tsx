@@ -75,18 +75,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/favicon.ico",
-        sizes: "any",
-      },
-      {
-        url: "/icon-16x16.png",
-        sizes: "16x16",
-        type: "image/png",
-      },
-      {
-        url: "/icon-32x32.png",
-        sizes: "32x32",
-        type: "image/png",
+        url: "/favicon.svg",
+        type: "image/svg+xml",
       },
       {
         url: "/icon-light-32x32.png",
@@ -100,68 +90,8 @@ export const metadata: Metadata = {
         sizes: "32x32",
         type: "image/png",
       },
-      {
-        url: "/icon-192x192.png",
-        sizes: "192x192",
-        type: "image/png",
-      },
-      {
-        url: "/icon-512x512.png",
-        sizes: "512x512",
-        type: "image/png",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
     ],
-    apple: [
-      {
-        url: "/apple-icon.png",
-        sizes: "180x180",
-        type: "image/png",
-      },
-      {
-        url: "/apple-icon-57x57.png",
-        sizes: "57x57",
-        type: "image/png",
-      },
-      {
-        url: "/apple-icon-72x72.png",
-        sizes: "72x72",
-        type: "image/png",
-      },
-      {
-        url: "/apple-icon-76x76.png",
-        sizes: "76x76",
-        type: "image/png",
-      },
-      {
-        url: "/apple-icon-114x114.png",
-        sizes: "114x114",
-        type: "image/png",
-      },
-      {
-        url: "/apple-icon-120x120.png",
-        sizes: "120x120",
-        type: "image/png",
-      },
-      {
-        url: "/apple-icon-144x144.png",
-        sizes: "144x144",
-        type: "image/png",
-      },
-      {
-        url: "/apple-icon-152x152.png",
-        sizes: "152x152",
-        type: "image/png",
-      },
-      {
-        url: "/apple-icon-180x180.png",
-        sizes: "180x180",
-        type: "image/png",
-      },
-    ],
+    apple: "/apple-icon.png",
   },
   manifest: "/site.webmanifest",
   other: {
@@ -179,6 +109,10 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/icon-light-32x32.png" media="(prefers-color-scheme: light)" />
+        <link rel="icon" href="/icon-dark-32x32.png" media="(prefers-color-scheme: dark)" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
         <script defer src="https://cloud.umami.is/script.js" data-website-id="d5bd28f4-c23a-49d4-9fb2-46c99a90f463"></script>
       </head>
       <body className={`${unbounded.variable} ${geist.variable} font-sans antialiased`}>
