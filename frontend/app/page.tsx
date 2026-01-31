@@ -45,7 +45,7 @@ function HomeContent() {
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      router.push(`/compare?search=${encodeURIComponent(searchQuery.trim())}`)
+      router.push(`/chat?q=${encodeURIComponent(searchQuery.trim())}`)
     }
   }
 
@@ -68,12 +68,11 @@ function HomeContent() {
           </div>
 
           <h1 className="mb-6 text-balance text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-            Compara propuestas políticas de forma neutral
+            Pregunta a los candidatos presidenciales
           </h1>
 
           <p className="mb-8 text-pretty text-lg text-muted-foreground md:text-xl">
-            TicoBot te ayuda a comparar las propuestas de los partidos políticos en Costa Rica. Información verificada,
-            imparcial y basada en documentos oficiales.
+            TicoBot te ayuda a hacer preguntas直接 a los candidatos presidenciales de Costa Rica. Obtén respuestas basadas en sus propuestas oficiales de forma neutral e imparcial.
           </p>
 
           {/* Search Bar */}
@@ -82,7 +81,7 @@ function HomeContent() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="¿Qué propuestas quieres comparar? Ej: educación, salud, empleo..."
+                  placeholder="¿Qué quieres preguntar a los candidatos? Ej: ¿Qué proponen para la educación?, ¿Cómo van a crear empleo?"
                   className="h-12 pl-10 pr-4"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -90,7 +89,7 @@ function HomeContent() {
                 />
               </div>
               <Button size="lg" className="h-12 px-6" onClick={handleSearch}>
-                Buscar
+                Preguntar
               </Button>
             </div>
           </div>
