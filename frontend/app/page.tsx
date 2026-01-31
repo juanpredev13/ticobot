@@ -45,7 +45,21 @@ function HomeContent() {
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      router.push(`/compare?search=${encodeURIComponent(searchQuery.trim())}`)
+      // Si es una pregunta, mandar al chat; si no, al comparador
+      const isQuestion = searchQuery.trim().includes('?') || 
+                        searchQuery.trim().toLowerCase().startsWith('qué') ||
+                        searchQuery.trim().toLowerCase().startsWith('cómo') ||
+                        searchQuery.trim().toLowerCase().startsWith('cuál') ||
+                        searchQuery.trim().toLowerCase().startsWith('dónde') ||
+                        searchQuery.trim().toLowerCase().startsWith('cuándo') ||
+                        searchQuery.trim().toLowerCase().startsWith('por qué') ||
+                        searchQuery.trim().toLowerCase().startsWith('quién')
+      
+      if (isQuestion) {
+        router.push(`/chat?q=${encodeURIComponent(searchQuery.trim())}`)
+      } else {
+        router.push(`/compare?search=${encodeURIComponent(searchQuery.trim())}`)
+      }
     }
   }
 
@@ -82,7 +96,7 @@ function HomeContent() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="¿Qué propuestas quieres comparar? Ej: educación, salud, empleo..."
+                  placeholder="¿Qué quieres comparar o preguntar? Ej: educación, ¿qué proponen sobre salud?, quiénes son los candidatos..."
                   className="h-12 pl-10 pr-4"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -90,7 +104,7 @@ function HomeContent() {
                 />
               </div>
               <Button size="lg" className="h-12 px-6" onClick={handleSearch}>
-                Buscar
+                Preguntar o Comparar
               </Button>
             </div>
           </div>

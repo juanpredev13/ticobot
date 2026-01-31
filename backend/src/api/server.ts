@@ -15,6 +15,7 @@ import candidatesRoutes from './routes/candidates.js';
 import compareRoutes from './routes/compare.js';
 import qualityRoutes from './routes/quality.js';
 import textViewerRoutes from './routes/text-viewer.js';
+import analyticsRoutes from './routes/analytics.js';
 
 const logger = new Logger('Server');
 
@@ -102,6 +103,7 @@ export function createApp(): Express {
     app.use('/api/compare', compareRoutes);
     app.use('/api/quality', qualityRoutes);
     app.use('/api/text-viewer', textViewerRoutes);
+    app.use('/api/analytics', analyticsRoutes);
 
     // Health check
     app.get('/health', (req: Request, res: Response) => {
@@ -158,6 +160,12 @@ export function createApp(): Express {
                 },
                 compare: {
                     compare: 'POST /api/compare'
+                },
+                analytics: {
+                    utmVisit: 'POST /api/analytics/utm-visit',
+                    trackEvent: 'POST /api/analytics/track-event',
+                    socialConversion: 'POST /api/analytics/social-conversion',
+                    userActivity: 'GET /api/analytics/user-activity'
                 }
             },
             documentation: '/api/docs'

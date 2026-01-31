@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import { useRouter } from "next/navigation"
+import { useUTMTracking } from "@/hooks/use-utm-tracking"
 
 interface User {
   id: string
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const { trackRegistration } = useUTMTracking()
 
   const checkAuth = async () => {
     try {
@@ -131,6 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("accessToken", data.accessToken)
         localStorage.setItem("refreshToken", data.refreshToken)
         setUser(data.user)
+        
+        // Track login with UTM data
+        trackRegistration(data.user.id, data.user.email)
+        
         router.push("/")
       } else {
         const error = await response.json()
@@ -156,6 +162,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("accessToken", data.accessToken)
         localStorage.setItem("refreshToken", data.refreshToken)
         setUser(data.user)
+        
+        // Track registration with UTM data
+        trackRegistration(data.user.id, data.user.email)
+        
         router.push("/")
       } else {
         const error = await response.json()
