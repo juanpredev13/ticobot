@@ -10,7 +10,7 @@ const envSchema = z.object({
   // Provider selection
   EMBEDDING_PROVIDER: z.enum(['openai', 'cohere', 'huggingface']).default('openai'),
   VECTOR_STORE: z.enum(['supabase', 'pinecone', 'qdrant', 'weaviate']).default('supabase'),
-  LLM_PROVIDER: z.enum(['openai', 'anthropic', 'google', 'ollama', 'deepseek']).default('openai'),
+  LLM_PROVIDER: z.enum(['openai', 'anthropic', 'google', 'ollama', 'deepseek', 'groq']).default('openai'),
   DATABASE_PROVIDER: z.enum(['supabase', 'postgresql']).default('supabase'),
 
   // OpenAI configuration
@@ -34,6 +34,10 @@ const envSchema = z.object({
   // Ollama configuration (local LLM)
   OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
   OLLAMA_MODEL: z.string().default('qwen2.5:14b'),
+
+  // Groq configuration (fast inference, free tier)
+  GROQ_API_KEY: z.string().optional(),
+  GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
 
   // Supabase configuration
   SUPABASE_URL: z.string().optional(),

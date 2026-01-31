@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
 import { Send, Loader2, MessageSquare, FileText, ExternalLink, Trash2, StopCircle } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -55,7 +54,6 @@ function ChatContent() {
 
   const inputRef = useRef<HTMLInputElement>(null)
   const inputContainerRef = useRef<HTMLDivElement>(null)
-  const searchParams = useSearchParams()
 
   // React Query hooks
   const { data: user, isLoading: userLoading } = useUser()
@@ -74,34 +72,18 @@ function ChatContent() {
   }, [isAuthenticated])
 
   useEffect(() => {
-    if (searchParams.get("focus") === "true") {
-      const scrollAndFocus = () => {
-        if (inputContainerRef.current && inputRef.current) {
-          // Use scrollIntoView for better mobile support
-          inputContainerRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          })
-
-          // Focus after scroll animation completes
-          setTimeout(() => {
-            if (inputRef.current) {
-              // For mobile, we need to trigger a click-like focus
-              inputRef.current.focus({ preventScroll: true })
-
-              // On iOS, we may need to trigger the keyboard manually
-              inputRef.current.click()
-            }
-          }, 600)
-        }
+    // Always focus input on page load
+    const focusInput = () => {
+      if (inputRef.current) {
+        inputRef.current.focus({ preventScroll: true })
       }
-
-      // Wait for page to fully render
-      requestAnimationFrame(() => {
-        setTimeout(scrollAndFocus, 200)
-      })
     }
-  }, [searchParams])
+
+    // Wait for page to fully render
+    requestAnimationFrame(() => {
+      setTimeout(focusInput, 200)
+    })
+  }, [])
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return
@@ -335,7 +317,8 @@ function ChatContent() {
                         className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                       >
                         <div className={`max-w-[85%] ${message.role === "user" ? "ml-auto" : ""}`}>
-                          {/* Message Bubble */}
+                          {/* Message Bubble - Skip empty assistant messages (streaming placeholder) */}
+                          {(message.role === "user" || message.content) && (
                           <div
                             className={`rounded-lg p-4 ${
                               message.role === "user"
@@ -375,6 +358,7 @@ function ChatContent() {
                             </div>
                             )}
                           </div>
+                          )}
 
                           {/* Sources (only for assistant messages) */}
                           {message.role === "assistant" && message.sources && message.sources.length > 0 && (
@@ -418,10 +402,12 @@ function ChatContent() {
                             </div>
                           )}
 
-                          {/* Timestamp */}
+                          {/* Timestamp - Hide for empty streaming messages */}
+                          {(message.role === "user" || message.content) && (
                           <div className="mt-2 text-xs text-muted-foreground">
                             {message.timestamp.toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" })}
                           </div>
+                          )}
                         </div>
                       </div>
                     ))

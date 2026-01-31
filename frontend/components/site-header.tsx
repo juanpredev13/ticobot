@@ -11,7 +11,7 @@ export function SiteHeader() {
   const navItems = [
     { href: "/", label: "Inicio" },
     { href: "/compare", label: "Comparar" },
-    { href: "/chat?focus=true", label: "Preguntas" },
+    { href: "/chat", label: "Preguntas" },
     { href: "/documents", label: "Documentos" },
     { href: "/blog", label: "Blog" },
   ]
@@ -66,7 +66,7 @@ export function SiteHeader() {
             {/* Desktop CTA Button */}
             <div className="hidden md:flex items-center gap-3">
               <Link
-                href="/chat?focus=true"
+                href="/chat"
                 className="inline-flex px-5 py-2 text-sm font-medium rounded-full transition-all duration-200 hover:scale-105"
                 style={{
                   background: "rgba(20, 184, 166, 0.9)",
@@ -136,7 +136,7 @@ export function SiteHeader() {
 
           <div className="mt-auto pt-8 flex flex-col gap-4 mb-4" style={{ borderTop: "1px solid rgba(0, 0, 0, 0.1)" }}>
             <Link
-              href="/chat?focus=true"
+              href="/chat"
               className="w-full py-5 px-4 rounded-2xl text-center text-lg font-medium transition-all duration-200"
               style={{
                 background: "rgba(20, 184, 166, 0.9)",

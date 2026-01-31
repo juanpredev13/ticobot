@@ -93,6 +93,11 @@ export class ProviderFactory {
         this.llmProviderInstance = new OllamaLLMProvider(env);
         return this.llmProviderInstance;
       }
+      case 'groq': {
+        const { GroqLLMProvider } = await import('../providers/llm/GroqLLMProvider.js');
+        this.llmProviderInstance = new GroqLLMProvider(env);
+        return this.llmProviderInstance;
+      }
       default:
         throw new Error(`Unknown LLM provider: ${env.LLM_PROVIDER}`);
     }
