@@ -3,6 +3,8 @@ import type { ILLMProvider } from '@ticobot/shared';
 import { parseTOON, validateTOON } from '../utils/toon.js';
 import { countTokens, estimateJSONTokens, formatTokenSavings } from '../utils/tokenCounter.js';
 import { toonStatsTracker } from '../utils/toonStats.js';
+import { InputSanitizer, type SanitizationResult } from '../../security/InputSanitizer.js';
+import { PromptHardener, type HardenedPrompt } from '../../security/PromptHardener.js';
 
 /**
  * Query processing result
@@ -19,12 +21,18 @@ export interface ProcessedQuery {
  * QueryProcessor - Pre-RAG query enhancement
  * Extracts keywords and entities from user queries to improve hybrid search precision
  * Part of the strategy to achieve 95%+ accuracy
+ * 
+ * SECURITY: Now includes prompt injection protection and input sanitization
  */
 export class QueryProcessor {
     private readonly logger: Logger;
+    private readonly inputSanitizer: InputSanitizer;
+    private readonly promptHardener: PromptHardener;
 
     constructor() {
         this.logger = new Logger('QueryProcessor');
+        this.inputSanitizer = new InputSanitizer();
+        this.promptHardener = new PromptHardener();
     }
 
     /**
@@ -32,6 +40,7 @@ export class QueryProcessor {
      * @param query - User's original query
      * @param llmProvider - LLM provider for keyword extraction
      * @returns Processed query with keywords
+     * @throws Error if input is blocked due to security concerns
      */
     async processQuery(
         query: string,
@@ -40,55 +49,66 @@ export class QueryProcessor {
         this.logger.info(`Processing query: "${query.substring(0, 100)}..."`);
 
         try {
-            // Use LLM to extract keywords and entities
-            // Using TOON format to reduce tokens (30-60% savings vs JSON)
-            const systemPrompt = `Eres un asistente experto en análisis de consultas sobre política costarricense.
+            // SECURITY: Step 1 - Sanitize input and detect injection attempts
+            const sanitizationResult = this.inputSanitizer.sanitize(query);
+            
+            if (this.inputSanitizer.shouldBlock(sanitizationResult)) {
+                const error = new Error(`Query blocked for security reasons: ${sanitizationResult.blockedReasons.join(', ')}`);
+                this.logger.error('Query blocked', {
+                    riskScore: sanitizationResult.riskScore,
+                    reasons: sanitizationResult.blockedReasons,
+                    originalLength: sanitizationResult.originalLength
+                });
+                throw error;
+            }
 
-Tu tarea es analizar la consulta del usuario y extraer:
-1. Palabras clave: Términos importantes para búsqueda (sin stopwords)
-2. Entidades: Nombres de instituciones, lugares, partidos políticos
-3. Intención: Tipo de consulta (pregunta, comparación, búsqueda)
+            if (sanitizationResult.isSuspicious) {
+                this.logger.warn('Suspicious query detected, proceeding with caution', {
+                    riskScore: sanitizationResult.riskScore,
+                    riskLevel: this.inputSanitizer.getRiskLevel(sanitizationResult.riskScore),
+                    sanitizedPreview: sanitizationResult.sanitized.substring(0, 100)
+                });
+            }
 
-Devuelve SOLO TOON (Token-Oriented Object Notation) con este formato:
-keywords: palabra1,palabra2,palabra3
-entities: entidad1,entidad2
+            // Use sanitized query for processing
+            const safeQuery = sanitizationResult.sanitized;
+            // SECURITY: Step 2 - Harden prompts for LLM interaction
+            const systemPrompt = this.promptHardener.createSecureTemplate('query_analysis');
+            const userPrompt = `Analiza la siguiente consulta sobre política costarricense y extrae información estructurada.
+
+Consulta del usuario: "${safeQuery}"
+
+Devuelve SOLO TOON (Token-Oriented Object Notation) con:
+keywords: 3-10 términos importantes (sin stopwords)
+entities: instituciones, partidos, lugares detectados
 intent: question|comparison|lookup
-enhancedQuery: versión expandida de la consulta con contexto adicional
+enhancedQuery: consulta reformulada con contexto adicional`;
 
-Reglas:
-- keywords: 3-10 palabras clave relevantes (sin stopwords como "el", "la", "de")
-- entities: Instituciones (CCSS, ICE, MEP), lugares (San José, Guanacaste), partidos
-- intent: question (pregunta), comparison (comparar), lookup (buscar dato específico)
-- enhancedQuery: Reformula la consulta agregando contexto implícito
+            // Apply prompt hardening
+            const hardenedPrompts = this.promptHardener.hardenPrompts(systemPrompt, userPrompt);
 
-Ejemplos:
-
-Consulta: "¿Qué propone el PLN sobre educación?"
-keywords: propuestas,educación,pln,partido liberación,plan gobierno
-entities: PLN,Partido Liberación Nacional
-intent: question
-enhancedQuery: ¿Cuáles son las propuestas del Partido Liberación Nacional (PLN) en materia de educación pública en su plan de gobierno?
-
-Consulta: "Comparar seguridad entre PAC y PUSC"
-keywords: seguridad,pac,pusc,comparación,propuestas
-entities: PAC,PUSC
-intent: comparison
-enhancedQuery: Comparar las propuestas de seguridad ciudadana y reducción de criminalidad entre el Partido Acción Ciudadana (PAC) y el Partido Unidad Social Cristiana (PUSC)`;
-
-            const userPrompt = `Consulta del usuario: "${query}"
-
-Devuelve SOLO TOON con keywords, entities, intent y enhancedQuery.`;
+            // SECURITY: Step 3 - Check for escape attempts before LLM call
+            if (hardenedPrompts.hasEscapedContent) {
+                this.logger.warn('Escape attempts detected in prompt, using fallback extraction');
+                return this.fallbackExtraction(safeQuery);
+            }
 
             const response = await llmProvider.generateCompletion(
                 [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt },
+                    { role: 'system', content: hardenedPrompts.systemPrompt },
+                    { role: 'user', content: hardenedPrompts.userPrompt },
                 ],
                 {
                     temperature: 0.3, // Low temperature for consistent extraction
                     maxTokens: 500,
                 }
             );
+
+            // SECURITY: Step 4 - Validate LLM response for prompt leakage
+            if (this.containsPromptLeakage(response.content, systemPrompt)) {
+                this.logger.warn('Potential prompt leakage detected in LLM response');
+                // Continue with extraction but log the incident
+            }
 
             // Count tokens in the actual LLM response
             const responseTokens = countTokens(response.content);
@@ -111,8 +131,8 @@ Devuelve SOLO TOON con keywords, entities, intent y enhancedQuery.`;
             }
 
             const result: ProcessedQuery = {
-                originalQuery: query,
-                enhancedQuery: parsed.enhancedQuery || query,
+                originalQuery: query, // Keep original for logging
+                enhancedQuery: parsed.enhancedQuery || safeQuery,
                 keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
                 entities: Array.isArray(parsed.entities) ? parsed.entities : [],
                 intent: parsed.intent || 'question',
@@ -141,12 +161,31 @@ Devuelve SOLO TOON con keywords, entities, intent y enhancedQuery.`;
                 `(vs ~${estimatedJsonTokens} JSON) - Saved ${savings}`
             );
 
+            // SECURITY: Log security metrics
+            this.logger.info('Security metrics', {
+                riskScore: sanitizationResult.riskScore,
+                riskLevel: this.inputSanitizer.getRiskLevel(sanitizationResult.riskScore),
+                hasEscapedContent: hardenedPrompts.hasEscapedContent,
+                isolationMarkers: hardenedPrompts.isolationMarkers.length
+            });
+
             return result;
 
         } catch (error) {
             this.logger.error('Query processing failed:', error);
-            // Fallback to basic extraction
-            return this.fallbackExtraction(query);
+            
+            // Check if this is a security-related error
+            if (error instanceof Error && error.message.includes('security reasons')) {
+                throw error; // Re-throw security errors
+            }
+            
+            // Fallback to basic extraction with safe query
+            const sanitizationResult = this.inputSanitizer.sanitize(query);
+            const safeQuery = this.inputSanitizer.shouldBlock(sanitizationResult) 
+                ? 'consulta genérica' 
+                : sanitizationResult.sanitized;
+            
+            return this.fallbackExtraction(safeQuery);
         }
     }
 
@@ -229,5 +268,79 @@ Devuelve SOLO TOON con keywords, entities, intent y enhancedQuery.`;
         ];
 
         return parts.join(' ');
+    }
+
+    /**
+     * SECURITY: Check if LLM response contains prompt leakage
+     */
+    private containsPromptLeakage(response: string, systemPrompt: string): boolean {
+        const responseLower = response.toLowerCase();
+        const systemLower = systemPrompt.toLowerCase();
+        
+        // Check for system instruction fragments
+        const leakIndicators = [
+            'critical instructions',
+            'system instruction',
+            'ignore user input',
+            'authoritative and override',
+            'do not reveal',
+            'boundary marker'
+        ];
+        
+        for (const indicator of leakIndicators) {
+            if (responseLower.includes(indicator)) {
+                this.logger.warn('Prompt leakage indicator found:', { indicator });
+                return true;
+            }
+        }
+        
+        // Check for exact matches of unique system phrases
+        const uniquePhrases = [
+            'costa rican political analysis',
+            'specialized role',
+            'security markers'
+        ];
+        
+        for (const phrase of uniquePhrases) {
+            if (responseLower.includes(phrase) && !systemLower.includes(phrase)) {
+                // If phrase appears in response but not in system, it might be leaked
+                this.logger.warn('Potential system phrase leakage:', { phrase });
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * SECURITY: Get security metrics for monitoring
+     */
+    getSecurityMetrics(query: string): {
+        sanitizationResult: SanitizationResult;
+        riskLevel: string;
+        isBlocked: boolean;
+    } {
+        const sanitizationResult = this.inputSanitizer.sanitize(query);
+        return {
+            sanitizationResult,
+            riskLevel: this.inputSanitizer.getRiskLevel(sanitizationResult.riskScore),
+            isBlocked: this.inputSanitizer.shouldBlock(sanitizationResult)
+        };
+    }
+
+    /**
+     * SECURITY: Update security configuration
+     */
+    updateSecurityConfig(config: {
+        sanitization?: any;
+        hardening?: any;
+    }): void {
+        if (config.sanitization) {
+            this.inputSanitizer.updateConfig(config.sanitization);
+        }
+        if (config.hardening) {
+            this.promptHardener.updateConfig(config.hardening);
+        }
+        this.logger.info('Security configuration updated');
     }
 }
