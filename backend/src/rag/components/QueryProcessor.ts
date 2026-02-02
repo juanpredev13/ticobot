@@ -90,7 +90,7 @@ enhancedQuery: consulta reformulada con contexto adicional`;
             // SECURITY: Step 3 - Check for escape attempts before LLM call
             if (hardenedPrompts.hasEscapedContent) {
                 this.logger.warn('Escape attempts detected in prompt, using fallback extraction');
-                return this.fallbackExtraction(safeQuery);
+            return this.fallbackExtraction(safeQuery, query);
             }
 
             const response = await llmProvider.generateCompletion(
@@ -227,8 +227,9 @@ enhancedQuery: consulta reformulada con contexto adicional`;
      * Fallback keyword extraction (basic, no LLM)
      * Used when LLM extraction fails
      */
-    private fallbackExtraction(query: string): ProcessedQuery {
+    private fallbackExtraction(query: string, originalQuery?: string): ProcessedQuery {
         const words = query.toLowerCase().split(/\s+/);
+        const intentQuery = originalQuery || query; // Use original for intent detection
 
         // Simple stopwords
         const stopwords = new Set(['el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'por', 'con', 'para', 'qué', 'cómo', 'cuál']);
@@ -248,11 +249,11 @@ enhancedQuery: consulta reformulada con contexto adicional`;
         }
 
         return {
-            originalQuery: query,
+            originalQuery: originalQuery || query,
             enhancedQuery: query,
             keywords,
             entities,
-            intent: query.includes('compar') ? 'comparison' : 'question',
+            intent: intentQuery.includes('compar') ? 'comparison' : 'question',
         };
     }
 

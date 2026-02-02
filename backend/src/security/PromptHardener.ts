@@ -107,7 +107,12 @@ export class PromptHardener {
         // Step 5: Validate prompt lengths
         this.validatePromptLengths(finalSystemPrompt, hardenedUser);
 
-        // Step 6: Log hardening process
+        // Step 6: Add START marker if structured templates are used
+        if (this.config.useStructuredPrompts) {
+            isolationMarkers.push(ISOLATION_MARKERS.START);
+        }
+
+        // Step 7: Log hardening process
         this.logHardeningProcess(systemPrompt, userPrompt, finalSystemPrompt, hardenedUser, hasEscapedContent);
 
         return {

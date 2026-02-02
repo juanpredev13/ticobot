@@ -277,7 +277,7 @@ export class InputSanitizer {
         // Remove control characters
         sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
-        // Normalize whitespace
+        // Normalize whitespace (after removing control chars)
         sanitized = sanitized.replace(/\s+/g, ' ').trim();
 
         // Remove or replace high-risk patterns
@@ -303,7 +303,7 @@ export class InputSanitizer {
 
         // High-risk pattern reasons
         for (const match of patternMatches) {
-            if (match.risk >= this.config.riskThresholds.high) {
+            if (match.risk >= this.config.riskThresholds.medium) { // Include medium risk patterns too
                 reasons.push(match.reason);
             }
         }
