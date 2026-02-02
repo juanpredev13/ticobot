@@ -240,20 +240,14 @@ enhancedQuery: consulta reformulada con contexto adicional`;
             .slice(0, 10);
 
         // Detect known entities (basic pattern matching)
-        const entities: string[] = [];
-        const knownEntities = ['PLN', 'PAC', 'PUSC', 'CCSS', 'ICE', 'MEP', 'TSE'];
-        for (const entity of knownEntities) {
-            if (query.toUpperCase().includes(entity)) {
-                entities.push(entity);
-            }
-        }
+        const entities = this.detectKnownEntities(query);
 
         return {
             originalQuery: originalQuery || query,
             enhancedQuery: query,
             keywords,
             entities,
-            intent: intentQuery.includes('compar') ? 'comparison' : 'question',
+            intent: this.detectComparisonIntent(intentQuery) ? 'comparison' : 'question',
         };
     }
 
@@ -330,15 +324,26 @@ enhancedQuery: consulta reformulada con contexto adicional`;
     }
 
     /**
-     * SECURITY: Update security configuration
+     * Detect known entities (basic pattern matching)
      */
-    updateSecurityConfig(config: {
-        sanitization?: any;
-        hardening?: any;
-    }): void {
-        if (config.sanitization) {
-            this.inputSanitizer.updateConfig(config.sanitization);
+    private detectKnownEntities(query: string): string[] {
+        const entities: string[] = [];
+        const knownEntities = ['PLN', 'PAC', 'PUSC', 'CCSS', 'ICE', 'MEP', 'TSE'];
+        for (const entity of knownEntities) {
+            if (query.toUpperCase().includes(entity)) {
+                entities.push(entity);
+            }
         }
+
+        return entities;
+    }
+
+    /**
+     * Detect comparison intent from query
+     */
+    private detectComparisonIntent(query: string): boolean {
+        return query.toLowerCase().includes('compar');
+    }
         if (config.hardening) {
             this.promptHardener.updateConfig(config.hardening);
         }

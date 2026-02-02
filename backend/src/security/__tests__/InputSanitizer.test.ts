@@ -153,7 +153,8 @@ describe('InputSanitizer', () => {
 
         it('should return correct risk levels', () => {
             expect(sanitizer.getRiskLevel(10)).toBe('low');
-            expect(sanitizer.getRiskLevel(40)).toBe('low'); // Below medium threshold of 60
+            expect(sanitizer.getRiskLevel(50)).toBe('low'); // Below medium threshold of 60
+            expect(sanitizer.getRiskLevel(60)).toBe('medium'); // Exactly medium threshold
             expect(sanitizer.getRiskLevel(70)).toBe('high');
             expect(sanitizer.getRiskLevel(90)).toBe('critical');
         });

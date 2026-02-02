@@ -82,6 +82,9 @@ describe('PromptHardener', () => {
             expect(result.isolationMarkers).toContain('---SYSTEM_INSTRUCTION---');
             expect(result.isolationMarkers).toContain('---USER_INPUT---');
             expect(result.isolationMarkers).toContain('---PROMPT_BOUNDARY_END---');
+            
+            // START marker is only added when structured prompts are enabled
+            expect(result.isolationMarkers).toContain('---PROMPT_BOUNDARY_START---');
         });
 
         it('should wrap content with proper boundaries', () => {
@@ -182,6 +185,9 @@ describe('PromptHardener', () => {
             });
 
             const result = hardener.hardenPrompts('System', 'User with \\n escape');
+            
+            // When structured prompts are disabled, no START marker should be added
+            expect(result.isolationMarkers).not.toContain('---PROMPT_BOUNDARY_START---');
             expect(result.userPrompt).toContain('\\n');
         });
     });
