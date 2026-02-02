@@ -184,6 +184,15 @@ describe('PromptHardener', () => {
                 useStructuredPrompts: false // Disable structured prompts to keep it short
             });
 
+            const result = customHardener.hardenPrompts('System', 'User with \\n escape');
+            
+            expect(result.userPrompt).toContain('\\n'); // Should not be removed since escape handling is disabled
+            // Should still have isolation markers even with structured prompts disabled
+            expect(result.isolationMarkers).toContain('---SYSTEM_INSTRUCTION---');
+            expect(result.isolationMarkers).toContain('---USER_INPUT---');
+            expect(result.isolationMarkers).toContain('---PROMPT_BOUNDARY_END---');
+        });
+
             const result = hardener.hardenPrompts('System', 'User with \\n escape');
             
             // When structured prompts are disabled, no START marker should be added

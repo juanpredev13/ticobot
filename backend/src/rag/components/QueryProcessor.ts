@@ -339,14 +339,28 @@ enhancedQuery: consulta reformulada con contexto adicional`;
     }
 
     /**
+     * Detect known entities (basic pattern matching)
+     */
+    private detectKnownEntities(query: string): string[] {
+        const entities: string[] = [];
+        const knownEntities = ['PLN', 'PAC', 'PUSC', 'CCSS', 'ICE', 'MEP', 'TSE'];
+        for (const entity of knownEntities) {
+            if (query.toUpperCase().includes(entity)) {
+                entities.push(entity);
+            }
+        }
+
+        return entities;
+    }
+
+    /**
      * Detect comparison intent from query
      */
     private detectComparisonIntent(query: string): boolean {
         return query.toLowerCase().includes('compar');
     }
-        if (config.hardening) {
+         if (config.hardening) {
             this.promptHardener.updateConfig(config.hardening);
         }
         this.logger.info('Security configuration updated');
     }
-}
