@@ -90,7 +90,7 @@ enhancedQuery: consulta reformulada con contexto adicional`;
             // SECURITY: Step 3 - Check for escape attempts before LLM call
             if (hardenedPrompts.hasEscapedContent) {
                 this.logger.warn('Escape attempts detected in prompt, using fallback extraction');
-            return this.fallbackExtraction(safeQuery, query);
+                return this.fallbackExtraction(safeQuery);
             }
 
             const response = await llmProvider.generateCompletion(
@@ -227,9 +227,8 @@ enhancedQuery: consulta reformulada con contexto adicional`;
      * Fallback keyword extraction (basic, no LLM)
      * Used when LLM extraction fails
      */
-    private fallbackExtraction(query: string, originalQuery?: string): ProcessedQuery {
+    private fallbackExtraction(query: string): ProcessedQuery {
         const words = query.toLowerCase().split(/\s+/);
-        const intentQuery = originalQuery || query; // Use original for intent detection
 
         // Simple stopwords
         const stopwords = new Set(['el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'por', 'con', 'para', 'qué', 'cómo', 'cuál']);
@@ -240,14 +239,20 @@ enhancedQuery: consulta reformulada con contexto adicional`;
             .slice(0, 10);
 
         // Detect known entities (basic pattern matching)
-        const entities = this.detectKnownEntities(query);
+        const entities: string[] = [];
+        const knownEntities = ['PLN', 'PAC', 'PUSC', 'CCSS', 'ICE', 'MEP', 'TSE'];
+        for (const entity of knownEntities) {
+            if (query.toUpperCase().includes(entity)) {
+                entities.push(entity);
+            }
+        }
 
         return {
-            originalQuery: originalQuery || query,
+            originalQuery: query,
             enhancedQuery: query,
             keywords,
             entities,
-            intent: this.detectComparisonIntent(intentQuery) ? 'comparison' : 'question',
+            intent: query.includes('compar') ? 'comparison' : 'question',
         };
     }
 
@@ -324,43 +329,18 @@ enhancedQuery: consulta reformulada con contexto adicional`;
     }
 
     /**
-     * Detect known entities (basic pattern matching)
+     * SECURITY: Update security configuration
      */
-    private detectKnownEntities(query: string): string[] {
-        const entities: string[] = [];
-        const knownEntities = ['PLN', 'PAC', 'PUSC', 'CCSS', 'ICE', 'MEP', 'TSE'];
-        for (const entity of knownEntities) {
-            if (query.toUpperCase().includes(entity)) {
-                entities.push(entity);
-            }
+    updateSecurityConfig(config: {
+        sanitization?: any;
+        hardening?: any;
+    }): void {
+        if (config.sanitization) {
+            this.inputSanitizer.updateConfig(config.sanitization);
         }
-
-        return entities;
-    }
-
-    /**
-     * Detect known entities (basic pattern matching)
-     */
-    private detectKnownEntities(query: string): string[] {
-        const entities: string[] = [];
-        const knownEntities = ['PLN', 'PAC', 'PUSC', 'CCSS', 'ICE', 'MEP', 'TSE'];
-        for (const entity of knownEntities) {
-            if (query.toUpperCase().includes(entity)) {
-                entities.push(entity);
-            }
-        }
-
-        return entities;
-    }
-
-    /**
-     * Detect comparison intent from query
-     */
-    private detectComparisonIntent(query: string): boolean {
-        return query.toLowerCase().includes('compar');
-    }
-         if (config.hardening) {
+        if (config.hardening) {
             this.promptHardener.updateConfig(config.hardening);
         }
         this.logger.info('Security configuration updated');
     }
+}
